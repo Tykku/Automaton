@@ -34,6 +34,7 @@ public class TweakConfigs
     public GettingTooAttachedConfiguration GettingTooAttached { get; init; } = new();
     public GMAlertConfiguration GMAlert { get; init; } = new();
     public HuntRelayHelperConfiguration HuntRelayHelper { get; init; } = new();
+    public MarketAdjusterConfiguration MarketAdjuster { get; init; } = new();
     public SimpleCurrencyAlertConfig SimpleCurrencyAlertConfig { get; init; } = new();
 }
 
