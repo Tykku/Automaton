@@ -11,7 +11,7 @@ public static class Coords
 {
     public static Vector3 PixelCoordsToWorldCoords(int x, int z, uint mapId)
     {
-        var map = GetRow<Lumina.Excel.Sheets.Map>(mapId);
+        var map = GetRow<Sheets.Map>(mapId);
         var scale = (map?.SizeFactor ?? 100) * 0.01f;
         var wx = PixelCoordToWorldCoord(x, scale, map?.OffsetX ?? 0);
         var wz = PixelCoordToWorldCoord(z, scale, map?.OffsetY ?? 0);

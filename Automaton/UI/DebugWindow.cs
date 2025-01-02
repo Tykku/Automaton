@@ -181,6 +181,13 @@ internal class DebugWindow : Window
                     if (ImGui.Button("Stop current task"))
                         P.Automation.Stop();
                 ImGui.TextUnformatted($"{P.Automation.CurrentTask?.Status ?? "Idle"}");
+
+                if (AgentMap.Instance()->IsFlagMarkerSet != 0)
+                {
+                    var closest = Coords.FindClosestAetheryte(PlayerEx.MapFlag.TerritoryId, PlayerEx.MapFlag.ToVector3());
+                    ImGui.TextUnformatted($"{closest}");
+                    ImGui.TextUnformatted($"{Coords.FindPrimaryAetheryte(closest)}");
+                }
             }
         }
     }
