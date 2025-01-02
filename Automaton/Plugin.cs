@@ -1,5 +1,6 @@
 using Automaton.Configuration;
 using Automaton.IPC;
+using Automaton.Tasks;
 using Automaton.UI;
 using AutoRetainerAPI;
 using Dalamud.Plugin;
@@ -26,6 +27,7 @@ public class Plugin : IDalamudPlugin
     public static readonly HashSet<Tweak> Tweaks = [];
     internal TaskManager TaskManager;
     internal AddonObserver AddonObserver;
+    internal Automation Automation;
 
     internal Provider Provider;
     internal NavmeshIPC Navmesh;
@@ -73,6 +75,7 @@ public class Plugin : IDalamudPlugin
 
         AddonObserver = new();
         TaskManager = new();
+        Automation = new();
         Provider = new();
         Navmesh = new();
         AutoRetainerAPI = new();
@@ -121,6 +124,7 @@ public class Plugin : IDalamudPlugin
         Svc.Framework.Update -= EventWatcher;
         C.EnabledTweaks.CollectionChanged -= OnChange;
         AddonObserver.Dispose();
+        Automation.Dispose();
         Memory?.Dispose();
         ECommonsMain.Dispose();
     }

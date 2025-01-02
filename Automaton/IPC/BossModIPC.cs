@@ -11,16 +11,7 @@ public class BossModIPC
     public BossModIPC() => EzIPC.Init(this, Name);
     public static bool Installed => Utils.HasPlugin(Name);
 
-    [EzIPC] public readonly Func<bool> IsMoving;
-    [EzIPC] public readonly Func<int> ForbiddenZonesCount;
-    [EzIPC] public readonly Func<uint, bool> HasModuleByDataId;
-    [EzIPC] public readonly Func<string, bool> ActiveModuleHasComponent;
-    [EzIPC] public readonly Func<List<string>> ActiveModuleComponentBaseList;
-    [EzIPC] public readonly Func<List<string>> ActiveModuleComponentList;
-    [EzIPC] public readonly Func<IReadOnlyList<string>, bool, List<string>> Configuration;
-    [EzIPC("Presets.%m", true)] public readonly Func<List<string>> List;
     [EzIPC("Presets.%m", true)] public readonly Func<string, string?> Get;
-    [EzIPC("Presets.%m", true)] public readonly Func<byte, List<string>> ForClass;
     [EzIPC("Presets.%m", true)] public readonly Func<string, bool, bool> Create;
     [EzIPC("Presets.%m", true)] public readonly Func<string, bool> Delete;
     [EzIPC("Presets.%m", true)] public readonly Func<string> GetActive;

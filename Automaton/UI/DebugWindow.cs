@@ -4,11 +4,14 @@ using ECommons.Automation;
 using ECommons.Automation.NeoTaskManager;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
+using static FFXIVClientStructs.FFXIV.Client.UI.RaptureAtkHistory.Delegates;
 
 namespace Automaton.UI;
 
@@ -133,6 +136,12 @@ internal class DebugWindow : Window
                 {
                     ImGui.TextUnformatted($"{BitConverter.ToString(obj)}");
                 }
+
+                if (ImGui.Button("hg"))
+                {
+                    var player = (Character*)GameObjectManager.Instance()->Objects.IndexSorted[0].Value;
+                    player->GetStatusManager()->SetStatus(20, 210, 5.0f, 100, 0xE0000000, true);
+                }
             }
         }
         using (var tabPlayerEx = ImRaii.TabItem($"{nameof(PlayerEx)}"))
@@ -161,6 +170,17 @@ internal class DebugWindow : Window
             {
                 ImGui.InputText("Filter", ref searchFilter, 256);
                 DrawInventory();
+            }
+        }
+
+        using (var tabAutomation = ImRaii.TabItem("Automation"))
+        {
+            if (tabAutomation)
+            {
+                using (ImRaii.Disabled(!P.Automation.Running))
+                    if (ImGui.Button("Stop current task"))
+                        P.Automation.Stop();
+                ImGui.TextUnformatted($"{P.Automation.CurrentTask?.Status ?? "Idle"}");
             }
         }
     }

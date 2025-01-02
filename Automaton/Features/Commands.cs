@@ -1,4 +1,8 @@
-﻿using FFXIVClientStructs.FFXIV.Client.Game;
+﻿using Automaton.IPC;
+using Automaton.Tasks;
+using ECommons.Automation;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
@@ -140,6 +144,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
                 Svc.Log.Info($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
                 TaskManager.EnqueueDelay(100);
                 TaskManager.Enqueue(() => AgentInventoryContext.Instance() != null);
+                TaskManager.Enqueue(() => !RaptureAtkModule.Instance()->AgentUpdateFlag.HasFlag(RaptureAtkModule.AgentUpdateFlags.InventoryUpdate));
                 TaskManager.Enqueue(() => AgentInventoryContext.Instance()->LowerItemQuality(i.Value, i.Value->Container, i.Value->Slot, 0));
             }
         }
@@ -166,4 +171,10 @@ public partial class Commands : Tweak<CommandsConfiguration>
         agent->UseAction(itemId >= 2_000_000 ? ActionType.KeyItem : ActionType.Item, itemId, extraParam: 65535);
     }
     #endregion
+
+    #region Kill Flag
+    [CommandHandler("/killflag", "", nameof(Config.EnableTPFlag))]
+    internal unsafe void OnCommandKillFlag(string command, string arguments) => P.Automation.Start(new KillFlag());
+    #endregion
+
 }

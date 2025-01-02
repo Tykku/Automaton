@@ -38,7 +38,14 @@ internal unsafe class Memory
         internal const string WorldTravel = "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8";
         internal const string WorldTravelSetupInfo = "48 8B CB E8 ?? ?? ?? ?? 48 8D 8B ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 8B 05 ?? ?? ?? ??";
         internal const string InventoryManagerUniqueItemCheck = "E8 ?? ?? ?? ?? 44 8B E0 EB 29";
-        internal const string ItemIsUniqueConditionalJump = "74 5E";
+        internal const string ItemIsUniqueConditionalJump = "75 4D";
+        // +47: 75 57
+        // 270: 75 12
+        // 107: 0f 85 ea 00 00 00
+        // 216: 75 4B
+        // 1D8: 75 48
+        // 56c: 74 7C
+        // 55e: 75 2c
     }
 
     internal unsafe delegate void RidePillionDelegate(BattleChara* target, int seatIndex);

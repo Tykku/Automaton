@@ -1,4 +1,6 @@
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Utility;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.STD;
 using Lumina.Excel.Sheets;
@@ -125,5 +127,7 @@ internal static partial class Extensions
 
         return output;
     }
+
+    public static Vector3 ToVector3(this FlagMapMarker flag) => Coords.MapMarkerToWorld(flag);
 }
 
