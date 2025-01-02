@@ -245,6 +245,7 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
             if ((XivChatType)payload.OriginChannel == channel && Config.DontRepeatRelays) continue;
             if (channel.GetAttribute<XivChatTypeInfoAttribute>()!.FancyName.StartsWith("Linkshell") && Player.CurrentWorld != Player.HomeWorld) continue;
             if (islocal && Player.Object.CurrentWorld.Value.RowId != payload.World.RowId && Config.OnlySendLocalHuntsToLocalChannels) continue;
+            if (Player.Object.CurrentWorld.Value.RowId != payload.World.RowId && channel.GetAttribute<XivChatTypeInfoAttribute>()!.FancyName.StartsWith("Novice")) continue;
 
             //TaskManager.EnqueueDelay(500);
 #pragma warning disable CS0618 // Type or member is obsolete
