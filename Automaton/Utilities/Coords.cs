@@ -37,6 +37,8 @@ public static class Coords
             // firmament aetherytes are special (see 
             return 70;
         }
+        if (territoryTypeId == 399) // Hinterlands
+            return 478; // Idyllshire
         List<Sheets.Aetheryte> aetherytes = [.. GetSheet<Sheets.Aetheryte>()?.Where(a => a.Territory.RowId == territoryTypeId)];
         return aetherytes.Count > 0 ? aetherytes.MinBy(a => (worldPos - AetherytePosition(a)).LengthSquared()).RowId : 0;
     }
@@ -74,9 +76,10 @@ public static class Coords
         return (0, default);
     }
 
-    public static Vector3 MapMarkerToWorld(FlagMapMarker marker)
+    public static unsafe Vector3 MapMarkerToWorld(FlagMapMarker marker)
     {
-        Vector3 v = new(marker.XFloat, 0, marker.YFloat);
+        if (AgentMap.Instance()->IsFlagMarkerSet == 0) throw new Exception("Flag not set");
+        Vector3 v = new(marker.XFloat, 1024, marker.YFloat);
         var row = GetRow<Sheets.Map>(marker.MapId);
         if (row is { } map)
         {

@@ -65,8 +65,8 @@ public abstract class CommonTasks : AutoTask
         using var scope = BeginScope("Mount");
         if (Player.Mounted) return;
         PlayerEx.Mount();
-        await WaitWhile(() => !PlayerEx.Occupied, "Mounting");
-        await WaitWhile(() => Player.Mounted, "Mounting");
+        await WaitUntil(() => Player.Mounted, "Mounting");
+        ErrorIf(!Player.Mounted, "Failed to mount");
     }
 
     protected async Task WaitUntilSkipTalk(Func<bool> condition, string scopeName)

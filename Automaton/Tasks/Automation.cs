@@ -65,7 +65,9 @@ public abstract class AutoTask
     // wait for a few frames
     protected Task NextFrame(int numFramesToWait = 1) => Svc.Framework.DelayTicks(numFramesToWait, _cts.Token);
 
-    // wait until condition function returns false, checking once every N frames
+    /// <summary>
+    /// Wait until condition function returns false, checking once every N frames
+    /// </summary>
     protected async Task WaitWhile(Func<bool> condition, string scopeName, int checkFrequency = 1)
     {
         using var scope = BeginScope(scopeName);
@@ -75,6 +77,11 @@ public abstract class AutoTask
             await NextFrame(checkFrequency);
         }
     }
+
+    /// <summary>
+    /// Wait until condition function returns true, checking once every N frames
+    /// </summary>
+    protected async Task WaitUntil(Func<bool> condition, string scopeName, int checkFrequency = 1) => await WaitWhile(() => !condition(), scopeName, checkFrequency);
 
     protected void Log(string message) => PluginLog.Debug($"[{GetType().Name}] [{string.Join(" > ", _debugContext)}] {message}");
 

@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using ECommons.Automation;
+using System.Threading.Tasks;
 
 namespace Automaton.Tasks;
 public sealed class KillFlag : CommonTasks
@@ -10,6 +11,14 @@ public sealed class KillFlag : CommonTasks
         Status = "Mounting";
         await Mount();
         Status = "Moving To";
-        await MoveTo(PlayerEx.MapFlag.ToVector3(), 5, true);
+        Chat.Instance.SendMessage("/vnav flyflag");
+        //await FlyFlag();
+    }
+
+    private async Task FlyFlag()
+    {
+        Chat.Instance.SendMessage("/vnav flyflag");
+        await WaitUntil(() => P.Navmesh.IsRunning(), "Starting");
+        await WaitUntil(() => !P.Navmesh.IsRunning(), "Stopping");
     }
 }
