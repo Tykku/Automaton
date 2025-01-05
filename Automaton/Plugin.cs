@@ -131,10 +131,32 @@ public class Plugin : IDalamudPlugin
 
     private void OnCommand(string command, string args)
     {
-        if (args.StartsWith('d'))
-            EzConfigGui.GetWindow<DebugWindow>()!.Toggle();
-        else
+        if (args.Length == 0)
             EzConfigGui.Window.Toggle();
+        else
+        {
+            var arguments = args.Split(' ');
+            var subcommand = arguments[0];
+            var @params = arguments.Skip(1).ToArray();
+            switch (subcommand)
+            {
+                case string cmd when cmd.StartsWith('d') && !cmd.EqualsIgnoreCase("disable"):
+                    EzConfigGui.GetWindow<DebugWindow>()!.Toggle();
+                    break;
+                case "enable":
+                    C.EnabledTweaks.Add(@params[0]);
+                    break;
+                case "disable":
+                    C.EnabledTweaks.Remove(@params[0]);
+                    break;
+                case "toggle":
+                    if (C.EnabledTweaks.Contains(@params[0]))
+                        C.EnabledTweaks.Remove(@params[0]);
+                    else
+                        C.EnabledTweaks.Add(@params[0]);
+                    break;
+            }
+        }
     }
 
     private void InitializeTweaks()
