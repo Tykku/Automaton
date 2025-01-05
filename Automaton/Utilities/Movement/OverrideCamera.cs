@@ -1,4 +1,3 @@
-using Dalamud.Hooking;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
 using System.Runtime.InteropServices;

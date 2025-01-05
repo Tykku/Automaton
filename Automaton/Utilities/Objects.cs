@@ -1,4 +1,6 @@
-﻿using FFXIVClientStructs.FFXIV.Client.Game.Character;
+﻿using Dalamud.Game.ClientState.Objects.Types;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using Lumina.Excel.Sheets;
 using System.Runtime.InteropServices;
 
 namespace Automaton.Utilities;
@@ -20,4 +22,5 @@ public static class ObjectExtensions
     public static unsafe Character* Character(this CSGameObject obj) => (Character*)&obj;
 
     public static bool IsTargetingPlayer(this DGameObject obj) => obj.TargetObjectId == Player.Object.GameObjectId;
+    public static bool IsHunt(this IBattleNpc mob) => GetSheet<NotoriousMonster>().Any(x => x.BNpcName.RowId == mob.NameId);
 }

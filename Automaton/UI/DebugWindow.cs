@@ -1,7 +1,6 @@
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
 using ECommons.Automation;
-using ECommons.Automation.NeoTaskManager;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -11,7 +10,6 @@ using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using ImGuiNET;
 using Lumina.Excel.Sheets;
-using static FFXIVClientStructs.FFXIV.Client.UI.RaptureAtkHistory.Delegates;
 
 namespace Automaton.UI;
 
@@ -32,8 +30,8 @@ internal class DebugWindow : Window
 
     private Enums.ExecuteCommandFlag flag;
     private Enums.ExecuteCommandComplexFlag flag2;
-    private int[] ecParams = new int[4];
-    private int[] eccParams = new int[4];
+    private readonly int[] ecParams = new int[4];
+    private readonly int[] eccParams = new int[4];
     private readonly Memory.ExecuteCommands executeCommands = new();
 
     private unsafe List<Pointer<InventoryItem>> InventoryItems
@@ -53,7 +51,7 @@ internal class DebugWindow : Window
     }
     private unsafe List<Pointer<InventoryItem>> FilteredItems => InventoryItems.Where(x => GetRow<Item>(x.Value->ItemId)?.Name.ExtractText().ToLowerInvariant().Contains(searchFilter.ToLowerInvariant()) ?? false).ToList();
     private string searchFilter = "";
-    private Memory.AllowUniqueItems AllowUniqueItems = new();
+    private readonly Memory.AllowUniqueItems AllowUniqueItems = new();
     private bool uniqueHook = false;
     public override unsafe void Draw()
     {

@@ -1,4 +1,5 @@
-﻿using ECommons.Automation;
+﻿using Dalamud.Game.ClientState.Objects.Types;
+using ECommons.Automation;
 using System.Threading.Tasks;
 
 namespace Automaton.Tasks;
@@ -12,7 +13,8 @@ public sealed class KillFlag : CommonTasks
         await Mount();
         Status = "Moving To";
         Chat.Instance.SendMessage("/vnav flyflag");
-        //await FlyFlag();
+        await FlyFlag();
+        await Kill();
     }
 
     private async Task FlyFlag()
@@ -20,5 +22,11 @@ public sealed class KillFlag : CommonTasks
         Chat.Instance.SendMessage("/vnav flyflag");
         await WaitUntil(() => P.Navmesh.IsRunning(), "Starting");
         await WaitUntil(() => !P.Navmesh.IsRunning(), "Stopping");
+    }
+
+    private async Task Kill()
+    {
+        var target = Svc.Objects.FirstOrDefault(o => o is IBattleNpc mob && mob.IsHunt(), null);
+        if (target == null) return;
     }
 }
