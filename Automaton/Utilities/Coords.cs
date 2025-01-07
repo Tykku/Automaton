@@ -37,8 +37,8 @@ public static class Coords
             // firmament aetherytes are special (see 
             return 70;
         }
-        if (territoryTypeId == 399) // Hinterlands
-            return 478; // Idyllshire
+        if (territoryTypeId == 478) // Hinterlands
+            return 75; // Idyllshire
         List<Sheets.Aetheryte> aetherytes = [.. GetSheet<Sheets.Aetheryte>()?.Where(a => a.Territory.RowId == territoryTypeId)];
         return aetherytes.Count > 0 ? aetherytes.MinBy(a => (worldPos - AetherytePosition(a)).LengthSquared()).RowId : 0;
     }

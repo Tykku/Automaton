@@ -4,11 +4,14 @@ using System.Threading.Tasks;
 namespace Automaton.Tasks;
 public abstract class CommonTasks : AutoTask
 {
-    protected async Task MoveTo(Vector3 dest, float tolerance, bool fly = false)
+    protected async Task MoveTo(Vector3 dest, float tolerance, bool mount = false, bool fly = false)
     {
         using var scope = BeginScope("MoveTo");
         if (Player.DistanceTo(dest) < tolerance)
             return; // already in range
+
+        if (mount)
+            await Mount();
 
         // ensure navmesh is ready
         await WaitWhile(() => P.Navmesh.BuildProgress() >= 0, "BuildMesh");

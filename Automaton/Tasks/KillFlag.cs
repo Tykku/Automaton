@@ -1,5 +1,6 @@
 ﻿using Dalamud.Game.ClientState.Objects.Types;
 using ECommons.Automation;
+using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
 
 namespace Automaton.Tasks;
@@ -7,7 +8,7 @@ public sealed class KillFlag : CommonTasks
 {
     protected override async Task Execute()
     {
-        Status = "Teleporting";
+        Status = $"Teleporting to {GetRow<TerritoryType>(PlayerEx.MapFlag.TerritoryId)!.Value.PlaceName.Value.Name}";
         await TeleportTo(PlayerEx.MapFlag.TerritoryId, PlayerEx.MapFlag.ToVector3());
         Status = "Mounting";
         await Mount();

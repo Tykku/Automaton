@@ -97,7 +97,7 @@ public static unsafe class PlayerEx
         var obj = GameObjectManager.Instance()->Objects.GetObjectByGameObjectId(instanceId);
         if (obj == null)
             return false;
-        TargetSystem.Instance()->InteractWithObject(obj);
+        TargetSystem.Instance()->InteractWithObject(obj, false);
         return true;
     }
 
