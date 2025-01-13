@@ -93,7 +93,7 @@ internal class DebugWindow : Window
                         var nutsAmt = InventoryManager.Instance()->GetInventoryItemCount(nuts);
                         var nutsCost = 25;
                         var freeslots = InventoryManager.Instance()->GetEmptySlotsInBag() + Inventory.GetEmptySlots([InventoryType.ArmoryRings]);
-                        uint tobuy = (uint)Math.Min(nutsAmt / nutsCost, freeslots);
+                        var tobuy = (uint)Math.Min(nutsAmt / nutsCost, freeslots);
                         Svc.Log.Info($"{InventoryManager.Instance()->GetEmptySlotsInBag()} {Inventory.GetEmptySlots([InventoryType.ArmoryRings])} {nutsAmt} {nutsAmt / nutsCost} {tobuy}");
                         Callback.Fire(addon, true, 0, 49, tobuy);
                     }
@@ -115,7 +115,7 @@ internal class DebugWindow : Window
                             if (item.Value.ItemSortCategory.Value.Param is 175 or 160)
                             {
                                 P.TaskManager.Enqueue(() => AgentInventoryContext.Instance()->UseItem(slot->ItemId));
-                                P.TaskManager.Enqueue(() => !Player.IsAnimationLocked && !PlayerEx.Occupied && !PlayerEx.IsCasting);
+                                P.TaskManager.Enqueue(() => !Player.IsAnimationLocked && !PlayerEx.IsBusy && !PlayerEx.IsCasting);
                             }
                             //ActionManager.Instance()->UseAction(ActionType.Item, slot->ItemId);
                         }
@@ -178,7 +178,7 @@ internal class DebugWindow : Window
                 using (ImRaii.Disabled(!P.Automation.Running))
                     if (ImGui.Button("Stop current task"))
                         P.Automation.Stop();
-                ImGui.TextUnformatted($"{P.Automation.CurrentTask?.Status ?? "Idle"}");
+                ImGuiX.TaskState();
 
                 if (AgentMap.Instance()->IsFlagMarkerSet != 0)
                 {

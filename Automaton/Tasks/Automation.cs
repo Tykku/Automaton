@@ -44,7 +44,7 @@ public abstract class AutoTask
 
     public void Cancel() => _cts.Cancel();
 
-    public void Run(Action completed)
+    public void Run(Action completed, Action? OnCompleted = null)
     {
         Svc.Framework.Run(async () =>
         {
@@ -53,6 +53,7 @@ public abstract class AutoTask
             if (task.IsFaulted)
                 PluginLog.Warning($"Task ended with error: {task.Exception}");
             completed();
+            OnCompleted?.Invoke();
             _cts.Dispose();
         }, _cts.Token);
     }
@@ -82,6 +83,25 @@ public abstract class AutoTask
     /// Wait until condition function returns true, checking once every N frames
     /// </summary>
     protected async Task WaitUntil(Func<bool> condition, string scopeName, int checkFrequency = 1) => await WaitWhile(() => !condition(), scopeName, checkFrequency);
+
+    /// <summary>
+    /// Wait until a condition function returns true, then wait until it returns false.
+    /// </summary>
+    /// <remarks> Meant for functions like checking if an ipc is busy then checking til it's not. </remarks>
+    protected async Task WaitUntilThenFalse(Func<bool> condition, string scopeName, int checkFrequency = 1)
+    {
+        using var scope = BeginScope(scopeName);
+        while (!condition())
+        {
+            Log("waiting...");
+            await NextFrame(checkFrequency);
+        }
+        while (condition())
+        {
+            Log("waiting...");
+            await NextFrame(checkFrequency);
+        }
+    }
 
     protected void Log(string message) => PluginLog.Debug($"[{GetType().Name}] [{string.Join(" > ", _debugContext)}] {message}");
 
@@ -121,7 +141,7 @@ public sealed class Automation : IDisposable
     }
 
     // if any other task is running, it's cancelled
-    public void Start(AutoTask task)
+    public void Start(AutoTask task, Action? OnCompleted = null)
     {
         Stop();
         CurrentTask = task;
@@ -130,7 +150,7 @@ public sealed class Automation : IDisposable
             if (CurrentTask == task)
                 CurrentTask = null;
             // else: some other task is now executing
-        });
+        }, OnCompleted);
     }
 }
 

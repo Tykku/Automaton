@@ -96,15 +96,4 @@ public static class Utils
         var eventData = stackalloc int[] { 0, 0, 0 };
         Agent->AgentInterface.ReceiveEvent((AtkValue*)eventData, args.GetPointer(0), (uint)args.Length, eventKind);
     }
-
-    public static T GetService<T>()
-    {
-        Svc.Log.Info($"Requesting {typeof(T)}");
-        var service = typeof(IDalamudPlugin).Assembly.GetType("Dalamud.Service`1")!.MakeGenericType(typeof(T));
-        var get = service.GetMethod("Get", BindingFlags.Public | BindingFlags.Static)!;
-        return (T)get.Invoke(null, null)!;
-    }
-
-    public static bool AllNull(params object[] objects) => objects.All(s => s == null);
-    public static bool AnyNull(params object[] objects) => objects.Any(s => s == null);
 }

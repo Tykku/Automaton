@@ -231,4 +231,6 @@ public static class ImGuiX
         }
         return res;
     }
+
+    public static void TaskState() => ImGui.TextUnformatted($"State: {P.Automation.CurrentTask?.Status ?? "Idle"}");
 }

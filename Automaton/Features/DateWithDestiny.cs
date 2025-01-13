@@ -46,7 +46,7 @@ public class DateWithDestinyConfiguration
 }
 
 [Tweak, Requirement(NavmeshIPC.Name, NavmeshIPC.Repo)]
-internal class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
+public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
 {
     public override string Name => "Date with Destiny";
     public override string Description => $"Fate tracker and mover. Doesn't handle combat. Open the menu with /vfate.";
@@ -118,8 +118,8 @@ internal class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
         .Zip(YokaiZones, (wxy, z) => (wxy.Minion, wxy.Medal, wxy.Weapon, z))
         .ToList();
 
-    private static readonly uint[] ForlornIDs = [7586, 7587];
-    private static readonly uint[] TwistOfFateStatusIDs = [1288, 1289];
+    internal static readonly uint[] ForlornIDs = [7586, 7587];
+    internal static readonly uint[] TwistOfFateStatusIDs = [1288, 1289];
 
     private ushort nextFateID;
     private byte fateMaxLevel;
@@ -315,7 +315,7 @@ internal class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
     private void ExecuteDismount() => ExecuteActionSafe(ActionType.GeneralAction, 23);
     private void ExecuteJump() => ExecuteActionSafe(ActionType.GeneralAction, 2);
 
-    private IOrderedEnumerable<IFate> GetFates() => Svc.Fates.Where(FateConditions)
+    internal IOrderedEnumerable<IFate> GetFates() => Svc.Fates.Where(FateConditions)
         .OrderByDescending(x =>
         Config.PrioritizeBonusFates
         && x.HasBonus

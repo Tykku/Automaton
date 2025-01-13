@@ -56,7 +56,7 @@ internal static partial class Extensions
 
         unsafe
         {
-            T* current = stdVector.First;
+            var current = stdVector.First;
             for (var i = 0; i < size; i++)
             {
                 list.Add(current[i]);

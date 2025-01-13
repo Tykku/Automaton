@@ -53,6 +53,9 @@ public class Inventory
         return null;
     }
 
+    private static unsafe int InternalGetItemCount(uint itemId, bool isHq) => InventoryManager.Instance()->GetInventoryItemCount(itemId, isHq);
+    public static unsafe int GetItemCount(uint itemId, bool includeHQ = true) => includeHQ ? InternalGetItemCount(itemId, true) + InternalGetItemCount(itemId, false) : InternalGetItemCount(itemId, false);
+
     public static unsafe bool HasItem(uint itemId) => GetItemInInventory(itemId, Equippable) != null;
     public static unsafe bool HasItemEquipped(uint itemId)
     {

@@ -94,7 +94,7 @@ public class DebugTools : Tweak<DebugToolsConfiguration>
     private bool ncActive;
     private unsafe void OnUpdate(IFramework framework)
     {
-        if (!Player.Available || PlayerEx.Occupied) return;
+        if (!Player.Available || PlayerEx.IsBusy) return;
         ShowMouseOverlay = false;
         if (Config.EnableTPClick && tpActive)
         {

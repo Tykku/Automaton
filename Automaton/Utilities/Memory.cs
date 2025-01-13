@@ -6,6 +6,7 @@ using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Common.Lua;
 using System.Runtime.InteropServices;
 using static Automaton.Utilities.Enums;
@@ -39,6 +40,7 @@ internal unsafe class Memory
         internal const string WorldTravelSetupInfo = "48 8B CB E8 ?? ?? ?? ?? 48 8D 8B ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 8B 05 ?? ?? ?? ??";
         internal const string InventoryManagerUniqueItemCheck = "E8 ?? ?? ?? ?? 44 8B E0 EB 29";
         internal const string ItemIsUniqueConditionalJump = "75 4D";
+        internal const string FreeCompanyDialogPacketReceive = "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 0F B6 42 31";
         // +47: 75 57
         // 270: 75 12
         // 107: 0f 85 ea 00 00 00
@@ -207,10 +209,17 @@ internal unsafe class Memory
         [EzHook(Signatures.ReceiveAchievementProgress, false)]
         internal EzHook<ReceiveAchievementProgressDelegate> ReceiveAchievementProgressHook = null!;
 
+        internal uint LastId;
+        internal uint LastCurrent;
+        internal uint LastMax;
+
         private void ReceiveAchievementProgressDetour(Achievement* achievement, uint id, uint current, uint max)
         {
             try
             {
+                LastId = id;
+                LastCurrent = current;
+                LastMax = max;
                 Svc.Log.Debug($"{nameof(ReceiveAchievementProgressDetour)}: [{id}] {current} / {max}");
                 Events.OnAchievementProgressUpdate(id, current, max);
             }
@@ -423,5 +432,22 @@ internal unsafe class Memory
 
     private static unsafe void SetMoveControlData(float speed)
         => Dalamud.SafeMemory.Write(((delegate* unmanaged[Stdcall]<byte, nint>)Svc.SigScanner.ScanText(Signatures.MoveController))(1) + 8, speed);
+    #endregion
+
+    #region Server IPC Packet Receive
+    public class FreeCompanyDialogIPCReceive : Hook
+    {
+        internal delegate void FreeCompanyDialogPacketReceiveDelegate(InfoProxyInterface* ptr, byte* packetData);
+        [EzHook(Signatures.FreeCompanyDialogPacketReceive, false)]
+        internal readonly EzHook<FreeCompanyDialogPacketReceiveDelegate> FreeCompanyDialogPacketReceiveHook = null!;
+
+        internal DateTime LastPacketTimestamp = DateTime.MinValue;
+        private void FreeCompanyDialogPacketReceiveDetour(InfoProxyInterface* ptr, byte* packetData)
+        {
+            LastPacketTimestamp = DateTime.Now;
+            Svc.Log.Info($"{nameof(FreeCompanyDialogPacketReceiveDetour)}: Packet received at {LastPacketTimestamp}");
+            FreeCompanyDialogPacketReceiveHook.Original(ptr, packetData);
+        }
+    }
     #endregion
 }
