@@ -9,7 +9,6 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Common.Lua;
 using System.Runtime.InteropServices;
-using static Automaton.Utilities.Enums;
 
 namespace Automaton.Utilities;
 #pragma warning disable CS0649
@@ -20,8 +19,8 @@ internal unsafe class Memory
         internal const string AgentReturnReceiveEvent = "E8 ?? ?? ?? ?? 41 8D 5E 0D";
         internal const string AbandonDuty = "E8 ?? ?? ?? ?? 48 8B 43 28 41 B2 01";
         internal const string BewitchProc = "40 53 48 83 EC 50 45 33 C0";
-        internal const string EnqueueSnipeTask = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 50 48 8B F1 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8B 4C 24 ??";
-        internal const string FollowQuestRecast = "E8 ?? ?? ?? ?? 48 8B 9C 24 ?? ?? ?? ?? 0F 28 74 24 ?? 0F 28 7C 24 ?? 44 0F 28 44 24 ?? 48 81 C4";
+        internal const string EnqueueSnipeTask = "48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 50 48 8B F1 48 8D 4C 24 ?? E8 ?? ?? ?? ?? 48 8B 4C 24 ??"; // xan
+        internal const string FollowQuestRecast = "E8 ?? ?? ?? ?? 48 8B 9C 24 ?? ?? ?? ?? 0F 28 74 24 ?? 0F 28 7C 24 ?? 44 0F 28 44 24 ?? 48 81 C4"; // atmo
         internal const string ExecuteCommand = "E8 ?? ?? ?? ?? 8D 46 0A"; // st
         internal const string ExecuteCommandComplexLocation = "E8 ?? ?? ?? ?? EB 1E 48 8B 53 08";
         internal const string GetGrandCompanyRank = "E8 ?? ?? ?? ?? 3A 43 01"; // cs
@@ -34,13 +33,16 @@ internal unsafe class Memory
         internal const string PlayerGroundSpeed = "F3 0F 59 05 ?? ?? ?? ?? F3 0F 59 05 ?? ?? ?? ?? F3 0F 58 05 ?? ?? ?? ?? 44 0F 28 C8";
         internal const string ReceiveAchievementProgress = "C7 81 ?? ?? ?? ?? ?? ?? ?? ?? 89 91 ?? ?? ?? ?? 44 89 81"; // cs
         internal const string RidePillion = "48 85 C9 0F 84 ?? ?? ?? ?? 48 89 6C 24 ?? 56 48 83 EC";
-        internal const string SalvageItem = "E8 ?? ?? ?? ?? EB 5A 48 8B 07";
-        internal const string ShouldDraw = "E8 ?? ?? ?? ?? 84 C0 75 18 48 8D 0D ?? ?? ?? ?? B3 01";
+        internal const string SalvageItem = "E8 ?? ?? ?? ?? EB 5A 48 8B 07"; // veyn
+        internal const string ShouldDraw = "E8 ?? ?? ?? ?? 84 C0 75 18 48 8D 0D ?? ?? ?? ?? B3 01"; // hasel
         internal const string WorldTravel = "40 55 53 56 57 41 54 41 56 41 57 48 8D AC 24 ?? ?? ?? ?? B8";
         internal const string WorldTravelSetupInfo = "48 8B CB E8 ?? ?? ?? ?? 48 8D 8B ?? ?? ?? ?? E8 ?? ?? ?? ?? 4C 8B 05 ?? ?? ?? ??";
         internal const string InventoryManagerUniqueItemCheck = "E8 ?? ?? ?? ?? 44 8B E0 EB 29";
         internal const string ItemIsUniqueConditionalJump = "75 4D";
-        internal const string FreeCompanyDialogPacketReceive = "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 0F B6 42 31";
+        internal const string FreeCompanyDialogPacketReceive = "48 89 5C 24 ?? 48 89 74 24 ?? 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 84 24 ?? ?? ?? ?? 0F B6 42 31"; // xan
+        internal const string SendLogout = "40 53 48 83 EC ?? 48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 74 ?? 48 8B 0D"; // Client::Game::Event::EventSceneModuleUsualImpl.Logout	push    rbx
+        internal const string ProcessSentChat = "E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??";
+        internal const string RetrieveMateria = "E8 ?? ?? ?? ?? EB 27 48 8B 01"; // Client::UI::Agent::AgentMaterialize.ReceiveEvent	call    sub_140B209C0
         // +47: 75 57
         // 270: 75 12
         // 107: 0f 85 ea 00 00 00
@@ -65,6 +67,9 @@ internal unsafe class Memory
     internal delegate nint WorldTravelSetupInfoDelegate(nint worldTravel, ushort currentWorld, ushort targetWorld);
     internal WorldTravelSetupInfoDelegate WorldTravelSetupInfo = null!;
 
+    internal delegate void RetrieveMateriaDelegate(EventFramework* framework, int eventID, InventoryType inventoryType, short inventorySlot, int extraParam);
+    internal RetrieveMateriaDelegate? RetrieveMateria = null!;
+
     public Memory()
     {
         EzSignatureHelper.Initialize(this);
@@ -73,6 +78,7 @@ internal unsafe class Memory
         AbandonDuty = Marshal.GetDelegateForFunctionPointer<AbandonDutyDelegate>(Svc.SigScanner.ScanText(Signatures.AbandonDuty));
         WorldTravel = Marshal.GetDelegateForFunctionPointer<AgentWorldTravelReceiveEventDelegate>(Svc.SigScanner.ScanText(Signatures.WorldTravel));
         WorldTravelSetupInfo = Marshal.GetDelegateForFunctionPointer<WorldTravelSetupInfoDelegate>(Svc.SigScanner.ScanText(Signatures.WorldTravelSetupInfo));
+        RetrieveMateria = Marshal.GetDelegateForFunctionPointer<RetrieveMateriaDelegate>(Svc.SigScanner.ScanText(Signatures.RetrieveMateria));
     }
 
     public void Dispose() { }

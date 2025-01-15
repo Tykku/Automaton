@@ -14,6 +14,7 @@ global using System.Collections.Generic;
 global using System.Linq;
 global using System.Numerics;
 global using static Automaton.Plugin;
+global using static Automaton.Utilities.Enums;
 global using static Automaton.Utilities.Extensions;
 global using static ECommons.GenericHelpers;
 global using AtkValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;

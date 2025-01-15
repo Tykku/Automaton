@@ -1,5 +1,4 @@
 using Dalamud.Interface.Textures.TextureWraps;
-using Dalamud.Plugin;
 using ECommons.Reflection;
 using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;

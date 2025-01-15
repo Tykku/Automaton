@@ -14,8 +14,8 @@ public sealed class KillFlag : CommonTasks
         await Mount();
         Status = "Moving To";
         Chat.Instance.SendMessage("/vnav flyflag");
-        await FlyFlag();
-        await Kill();
+        //await FlyFlag();
+        //await Kill();
     }
 
     private async Task FlyFlag()
