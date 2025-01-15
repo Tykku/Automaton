@@ -19,7 +19,7 @@ public static class Enums
         CancelCast = 105,
         RidePillion = 106,
         WithdrawParasol = 109,
-        const_10 = 110,
+        Unk110 = 110,
         Revive = 200,
         TerritoryTransport = 201,
         Teleport = 202,
@@ -38,9 +38,23 @@ public static class Enums
         PlaceFieldMarker = 317,
         RemoveFieldMarker = 318,
         ResetStrikingDummy = 319,
+        Unk400 = 400,
+        Unk401 = 401,
+        Unk402 = 402,
+        Unk403 = 403,
+        Unk404 = 404,
         RequestInventory = 405,
+        Unk406 = 406,
+        Unk407 = 407,
         EnterMateriaAttachState = 408,
+        Unk409 = 409,
         LeaveMateriaAttachState = 410,
+        Unk411 = 411, // materia related?
+        Unk412 = 412, // materia related?
+        Unk413 = 413,
+        Unk415 = 415,
+        Unk416 = 416,
+        Unk417 = 417,
         CancelMateriaMeldRequest = 419,
         RequestCabinet = 424,
         StoreToCabinet = 425,
@@ -150,5 +164,12 @@ public static class Enums
         Dive = 607,
         PetAction = 1800,
         BgcArmyAction = 1810
+    }
+
+    public enum MaterializeEventId
+    {
+        Unk0 = 0x390000, // called in salvage and unk
+        Retrieve = 0x390001,
+        Unk2 = 0x390002, // called in purify
     }
 }

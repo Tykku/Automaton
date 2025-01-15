@@ -19,7 +19,7 @@ internal class RetrieveMateria : Tweak
             PrefixChar = 'C',
             Name = "Retrieve All Materia",
             OnClicked = (a) => P.Automation.Start(new RetrieveAllMateria(inv.TargetItem.Value)),
-            IsEnabled = inv.TargetItem.Value.Materia.ToArray().Any(m => m != 0) && !Svc.Condition[ConditionFlag.Occupied39],
+            IsEnabled = inv.TargetItem.Value.Materia.ToArray().Any(m => m != 0) && !PlayerEx.IsBusy,
         });
     }
 }

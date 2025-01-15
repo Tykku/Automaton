@@ -13,7 +13,7 @@ public sealed class RetrieveAllMateria(GameInventoryItem item) : CommonTasks
         foreach (var materia in materias)
         {
             Retrieve();
-            await WaitUntilThenFalse(() => Svc.Condition[ConditionFlag.Occupied39], "RetrivingMateria");
+            await WaitUntilThenFalse(() => Svc.Condition[ConditionFlag.Occupied39], "RetrievingMateria");
         }
     }
 
@@ -22,7 +22,7 @@ public sealed class RetrieveAllMateria(GameInventoryItem item) : CommonTasks
         try
         {
             var _item = (InventoryItem*)item.Address;
-            P.Memory.RetrieveMateria?.Invoke(EventFramework.Instance(), 0x390001, _item->Container, _item->Slot, 0);
+            P.Memory.RetrieveMateria?.Invoke(EventFramework.Instance(), (int)MaterializeEventId.Retrieve, _item->Container, _item->Slot, 0);
         }
         catch (Exception e) { e.Log(); }
     }

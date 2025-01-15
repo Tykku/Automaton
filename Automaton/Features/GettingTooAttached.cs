@@ -54,7 +54,7 @@ public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
 
     public override void DrawConfig()
     {
-        if (!C.EnabledTweaks.Contains(Name)) return;
+        if (!C.EnabledTweaks.Contains(nameof(GettingTooAttached))) return;
 
         ImGui.DragInt("Number of Loops", ref Config.NumberOfLoops);
         if (ImGui.Button(!active ? $"Start Looping###StartLooping" : $"Looping. Click to abort.###AbortLoop"))

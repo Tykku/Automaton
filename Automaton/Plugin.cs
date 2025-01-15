@@ -155,6 +155,10 @@ public class Plugin : IDalamudPlugin
                     else
                         C.EnabledTweaks.Add(@params[0]);
                     break;
+                case "stop":
+                    P.Automation.Stop();
+                    P.TaskManager.Abort();
+                    break;
             }
         }
     }
