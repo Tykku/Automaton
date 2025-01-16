@@ -16,21 +16,20 @@ public sealed class BuyCeruleumTanks : CommonTasks
 
         Status = $"Moving to {npc.Location}";
         await MoveToDirectly(npc.Location, 0.5f);
-        await BuyFromFccShop(MammetVoyagerENpcId, npc!.ShopId, CeruleumTankId, 999 - Inventory.GetItemCount(CeruleumTankId, false), Game.ShopType.FreeCompanyCreditShop);
+        await BuyFromFccShop(MammetVoyagerENpcId, npc!.ShopId, CeruleumTankId, 999 - Inventory.GetItemCount(CeruleumTankId, false);
     }
 
-    private async Task BuyFromFccShop(ulong vendorInstanceId, uint shopId, uint itemId, int count, Game.ShopType shopType = Game.ShopType.None)
+    private async Task BuyFromFccShop(ulong vendorInstanceId, uint shopId, uint itemId, int count)
     {
         using var scope = BeginScope("Buy");
         Status = "Opening shop";
-        if (!Game.IsShopOpen(shopId, shopType))
+        if (!Game.AddonActive("FreeCompanyCreditShop"))
         {
             Log("Opening shop...");
             ErrorIf(!Game.OpenShop(vendorInstanceId, shopId), $"Failed to open shop {vendorInstanceId:X}.{shopId:X}");
-            await WaitWhile(() => !Game.IsShopOpen(shopId, shopType), "WaitForOpen");
+            await WaitWhile(() => !Game.AddonActive("FreeCompanyCreditShop"), "WaitForFCCShop");
             await WaitWhile(() => !Svc.Condition[ConditionFlag.OccupiedInEvent], "WaitForCondition");
         }
-        await WaitWhile(() => !Game.AddonActive("FreeCompanyCreditShop"), "WaitForFCCShop");
 
         Log("Buying...");
         if (TryGetAddonMaster<AddonMaster.FreeCompanyCreditShop>(out var am))
