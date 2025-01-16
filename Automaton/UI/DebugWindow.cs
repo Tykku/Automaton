@@ -4,6 +4,8 @@ using ECommons.Automation;
 using ECommons.ImGuiMethods;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using FFXIVClientStructs.FFXIV.Client.Game.InstanceContent;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -66,7 +68,7 @@ internal class DebugWindow : Window
                 ImGui.InputInt("p2", ref ecParams[1]);
                 ImGui.InputInt("p3", ref ecParams[2]);
                 ImGui.InputInt("p4", ref ecParams[3]);
-                if (ImGui.Button("exeucte"))
+                if (ImGui.Button("execute"))
                     executeCommands.ExecuteCommand(flag, ecParams[0], ecParams[1], ecParams[2], ecParams[3]);
 
                 using var id = ImRaii.PushId("complex");
@@ -75,9 +77,8 @@ internal class DebugWindow : Window
                 ImGui.InputInt("p2", ref eccParams[1]);
                 ImGui.InputInt("p3", ref eccParams[2]);
                 ImGui.InputInt("p4", ref eccParams[3]);
-                if (ImGui.Button("exeucte"))
+                if (ImGui.Button("execute"))
                     executeCommands.ExecuteCommandComplexLocation(flag2, Player.Position, eccParams[0], eccParams[1], eccParams[2], eccParams[3]);
-
             }
         }
         using (var tabMiscTools = ImRaii.TabItem("Misc Tools"))

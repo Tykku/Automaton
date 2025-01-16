@@ -1,4 +1,5 @@
-﻿using ECommons.Automation;
+﻿using Dalamud.Game.Inventory;
+using ECommons.Automation;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
@@ -43,13 +44,7 @@ internal unsafe class Memory
         internal const string SendLogout = "40 53 48 83 EC ?? 48 8B 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 74 ?? 48 8B 0D"; // Client::Game::Event::EventSceneModuleUsualImpl.Logout	push    rbx
         internal const string ProcessSentChat = "E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??";
         internal const string RetrieveMateria = "E8 ?? ?? ?? ?? EB 27 48 8B 01"; // Client::UI::Agent::AgentMaterialize.ReceiveEvent	call    sub_140B209C0
-        // +47: 75 57
-        // 270: 75 12
-        // 107: 0f 85 ea 00 00 00
-        // 216: 75 4B
-        // 1D8: 75 48
-        // 56c: 74 7C
-        // 55e: 75 2c
+        internal const string AgentMateriaAttachReceiveEvent = "E8 ?? ?? ?? ?? 84 C0 74 7E 48 8B CB"; // look around sub_1416B7280
     }
 
     internal unsafe delegate void RidePillionDelegate(BattleChara* target, int seatIndex);
@@ -70,6 +65,9 @@ internal unsafe class Memory
     internal delegate void RetrieveMateriaDelegate(EventFramework* framework, int eventID, InventoryType inventoryType, short inventorySlot, int extraParam);
     internal RetrieveMateriaDelegate? RetrieveMateria = null!;
 
+    internal delegate byte MateriaAttachReceiveEventDelegate(nint a1, nint a2, nint a3, byte a4);
+    internal MateriaAttachReceiveEventDelegate AgentMateriaAttachReceiveEvent = null!;
+
     public Memory()
     {
         EzSignatureHelper.Initialize(this);
@@ -79,6 +77,7 @@ internal unsafe class Memory
         WorldTravel = Marshal.GetDelegateForFunctionPointer<AgentWorldTravelReceiveEventDelegate>(Svc.SigScanner.ScanText(Signatures.WorldTravel));
         WorldTravelSetupInfo = Marshal.GetDelegateForFunctionPointer<WorldTravelSetupInfoDelegate>(Svc.SigScanner.ScanText(Signatures.WorldTravelSetupInfo));
         RetrieveMateria = Marshal.GetDelegateForFunctionPointer<RetrieveMateriaDelegate>(Svc.SigScanner.ScanText(Signatures.RetrieveMateria));
+        AgentMateriaAttachReceiveEvent = Marshal.GetDelegateForFunctionPointer<MateriaAttachReceiveEventDelegate>(Svc.SigScanner.ScanText(Signatures.AgentMateriaAttachReceiveEvent));
     }
 
     public void Dispose() { }
@@ -454,6 +453,18 @@ internal unsafe class Memory
             Svc.Log.Info($"{nameof(FreeCompanyDialogPacketReceiveDetour)}: Packet received at {LastPacketTimestamp}");
             FreeCompanyDialogPacketReceiveHook.Original(ptr, packetData);
         }
+    }
+    #endregion
+
+    #region Materia
+    public unsafe void MaterializeAction(GameInventoryItem item, MaterializeEventId eventId)
+    {
+        try
+        {
+            var _item = (InventoryItem*)item.Address;
+            RetrieveMateria?.Invoke(EventFramework.Instance(), (int)eventId, _item->Container, _item->Slot, 0);
+        }
+        catch (Exception e) { e.Log(); }
     }
     #endregion
 }

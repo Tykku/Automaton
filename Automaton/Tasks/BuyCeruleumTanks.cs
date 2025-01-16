@@ -16,7 +16,7 @@ public sealed class BuyCeruleumTanks : CommonTasks
 
         Status = $"Moving to {npc.Location}";
         await MoveToDirectly(npc.Location, 0.5f);
-        await BuyFromFccShop(MammetVoyagerENpcId, npc!.ShopId, CeruleumTankId, 999 - Inventory.GetItemCount(CeruleumTankId, false);
+        await BuyFromFccShop(MammetVoyagerENpcId, npc!.ShopId, CeruleumTankId, 999 - Inventory.GetItemCount(CeruleumTankId, false));
     }
 
     private async Task BuyFromFccShop(ulong vendorInstanceId, uint shopId, uint itemId, int count)
