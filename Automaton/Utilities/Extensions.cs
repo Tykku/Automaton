@@ -1,4 +1,5 @@
 using Dalamud.Game.Text.SeStringHandling;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.STD;
 using Lumina.Excel.Sheets;
@@ -25,7 +26,7 @@ internal static partial class Extensions
     public static bool TryParseVector3(this string input, out Vector3 output)
     {
         output = Vector3.Zero;
-        var pattern = @"(\d+(\.\d+)?),(\d+(\.\d+)?),(\d+(\.\d+)?)";
+        var pattern = @"(-?\d+(\.\d+)?),(-?\d+(\.\d+)?),(-?\d+(\.\d+)?)";
         var match = Regex.Match(input, pattern);
         if (match.Success)
         {
@@ -55,7 +56,7 @@ internal static partial class Extensions
 
         unsafe
         {
-            T* current = stdVector.First;
+            var current = stdVector.First;
             for (var i = 0; i < size; i++)
             {
                 list.Add(current[i]);
@@ -125,5 +126,7 @@ internal static partial class Extensions
 
         return output;
     }
+
+    public static Vector3 ToVector3(this FlagMapMarker flag) => Coords.MapMarkerToWorld(flag);
 }
 

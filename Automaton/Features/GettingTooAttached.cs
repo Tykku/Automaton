@@ -20,12 +20,15 @@ public class GettingTooAttachedConfiguration
 public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
 {
     public override string Name => "Getting Too Attached";
-    public override string Description => "Loop through attaching and removing materia for the Getting Too Attached achievement. Feature currently under UI renovations, please use the button.";
+    public override string Description => "Loop through attaching and removing materia for the Getting Too Attached achievement";
 
+    const int AchievementId = 1905;
     internal bool active = false;
-
+    private readonly Memory.AchievementProgress AchievementProgress = new();
     public override void Enable()
     {
+        AchievementProgress.ReceiveAchievementProgressHook.Enable();
+        Events.AchievementProgressUpdate += OnAchievementProgressUpdate;
         Svc.Toasts.ErrorToast += CheckForErrors;
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "MateriaAttachDialog", ConfirmMateriaDialog);
         Svc.AddonLifecycle.RegisterListener(AddonEvent.PostSetup, "MateriaRetrieveDialog", ConfirmRetrievalDialog);
@@ -33,13 +36,26 @@ public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
 
     public override void Disable()
     {
+        AchievementProgress.ReceiveAchievementProgressHook.Disable();
+        Events.AchievementProgressUpdate -= OnAchievementProgressUpdate;
         Svc.Toasts.ErrorToast -= CheckForErrors;
         Svc.AddonLifecycle.UnregisterListener(ConfirmMateriaDialog);
         Svc.AddonLifecycle.UnregisterListener(ConfirmRetrievalDialog);
     }
 
+    private void OnAchievementProgressUpdate(uint id, uint current, uint max)
+    {
+        if (id == AchievementId)
+        {
+            Svc.Log.Info($"setting loop count to {max - current}");
+            Config.NumberOfLoops = (int)(max - current);
+        }
+    }
+
     public override void DrawConfig()
     {
+        if (!C.EnabledTweaks.Contains(nameof(GettingTooAttached))) return;
+
         ImGui.DragInt("Number of Loops", ref Config.NumberOfLoops);
         if (ImGui.Button(!active ? $"Start Looping###StartLooping" : $"Looping. Click to abort.###AbortLoop"))
         {
@@ -54,6 +70,8 @@ public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
                 CancelLoop();
             }
         }
+        if (ImGui.Button("request"))
+            FFXIVClientStructs.FFXIV.Client.Game.UI.Achievement.Instance()->RequestAchievementProgress(AchievementId);
     }
 
     private void CancelLoop()

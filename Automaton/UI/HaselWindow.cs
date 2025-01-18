@@ -5,7 +5,6 @@ using ECommons.SimpleGui;
 using ImGuiNET;
 using System.Drawing;
 using System.Reflection;
-using System.Text.RegularExpressions;
 
 namespace Automaton.UI;
 

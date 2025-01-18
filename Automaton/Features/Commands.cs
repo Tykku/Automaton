@@ -1,4 +1,6 @@
-﻿using FFXIVClientStructs.FFXIV.Client.Game;
+﻿using Automaton.Tasks;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
@@ -129,11 +131,19 @@ public partial class Commands : Tweak<CommandsConfiguration>
         if (!uint.TryParse(arguments, out var itemId) && arguments != "all") return;
         if (arguments == "all")
         {
+            if (AgentInventoryContext.Instance() == null)
+            {
+                Svc.Log.Warning("AgentInventoryContext is null, cannot lower quality on items");
+                return;
+            }
             foreach (var i in Inventory.GetHQItems(Inventory.PlayerInventory))
             {
+                // TODO: this still sometimes can just cause a crash, idk why
                 Svc.Log.Info($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
-                TaskManager.EnqueueDelay(20);
-                TaskManager.Enqueue(() => AgentInventoryContext.Instance()->LowerItemQuality(i.Value, i.Value->Container, i.Value->Slot, 0));
+                TaskManager.EnqueueDelay(100);
+                TaskManager.Enqueue(() => AgentInventoryContext.Instance() != null, "Checking if AgentInventoryContext is null");
+                TaskManager.Enqueue(() => !RaptureAtkModule.Instance()->AgentUpdateFlag.HasFlag(RaptureAtkModule.AgentUpdateFlags.InventoryUpdate), "checking for no inventory update");
+                TaskManager.Enqueue(() => AgentInventoryContext.Instance()->LowerItemQuality(i.Value, i.Value->Container, i.Value->Slot, 0), $"lowering quality on [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
             }
         }
         else
@@ -159,4 +169,10 @@ public partial class Commands : Tweak<CommandsConfiguration>
         agent->UseAction(itemId >= 2_000_000 ? ActionType.KeyItem : ActionType.Item, itemId, extraParam: 65535);
     }
     #endregion
+
+    #region Kill Flag
+    [CommandHandler("/killflag", "", nameof(Config.EnableTPFlag))]
+    internal unsafe void OnCommandKillFlag(string command, string arguments) => P.Automation.Start(new KillFlag());
+    #endregion
+
 }

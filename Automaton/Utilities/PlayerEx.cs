@@ -3,7 +3,9 @@ using ECommons.Automation;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
+using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using Lumina.Excel.Sheets;
@@ -18,7 +20,7 @@ public static unsafe class PlayerEx
     public static BattleChara* BattleChara => (BattleChara*)Svc.ClientState.LocalPlayer.Address;
     public static CSGameObject* GameObject => (CSGameObject*)Svc.ClientState.LocalPlayer.Address;
 
-    public static bool Occupied => IsOccupied();
+    public static bool IsBusy => IsOccupied() || IsCasting || AnimationLock > 0;
 
     public static PlayerController* Controller => (PlayerController*)Svc.SigScanner.GetStaticAddressFromSig(Memory.Signatures.PlayerController);
     public static bool HasPenalty => FFXIVClientStructs.FFXIV.Client.Game.UI.InstanceContent.Instance()->GetPenaltyRemainingInMinutes(0) > 0;
@@ -78,4 +80,26 @@ public static unsafe class PlayerEx
             }
         }
     }
+
+    public static void ResetTimers()
+    {
+        var module = UIModule.Instance()->GetInputTimerModule();
+        module->AfkTimer = 0;
+        module->ContentInputTimer = 0;
+        module->InputTimer = 0;
+        module->Unk1C = 0;
+        if (Player.OnlineStatus == 17) // away from keyboard
+            Chat.Instance.SendMessage("/afk off"); // TODO: find a better way
+    }
+
+    public static bool InteractWith(ulong instanceId)
+    {
+        var obj = GameObjectManager.Instance()->Objects.GetObjectByGameObjectId(instanceId);
+        if (obj == null)
+            return false;
+        TargetSystem.Instance()->InteractWithObject(obj, false);
+        return true;
+    }
+
+    public static void Mount() => ActionManager.Instance()->UseAction(ActionType.GeneralAction, 24);
 }

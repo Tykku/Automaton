@@ -122,6 +122,7 @@ public abstract partial class Tweak // Internal
         if (!Ready || Outdated || Disabled) return;
         if (Requirements.Any(r => !r.IsLoaded))
         {
+            // TODO: append a button to re-enable
             ModuleMessage("Feature not enabled due to missing dependencies. Please install them then re-enable this feature.");
             return;
         }

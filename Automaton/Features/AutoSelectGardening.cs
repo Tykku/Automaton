@@ -62,7 +62,7 @@ public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration
     {
         ImGuiX.DrawSection("Configuration");
 
-        if (Utils.AnyNull(Seeds, Soils, Fertilizers)) return;
+        if (AnyNull(Seeds, Soils, Fertilizers)) return;
 
         ImGui.Checkbox("Show Only Inventory Items", ref Config.OnlyShowInventoryItems);
 

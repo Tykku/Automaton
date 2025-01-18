@@ -23,4 +23,9 @@ public class Events
 
     public static event Action? EnteredPvPInstance;
     public static void OnEnteredPvPInstance() => EnteredPvPInstance?.Invoke();
+
+    public static event Action<DateTime, uint, uint, ushort, uint, Memory<byte>>? ServerIPCReceived;
+    public static void OnServerIPCReceived(DateTime sendTimestamp, uint sourceServerActor, uint targetServerActor, ushort opcode, uint epoch, Span<byte> payload)
+        => ServerIPCReceived?.Invoke(sendTimestamp, sourceServerActor, targetServerActor, opcode, epoch, payload.ToArray().AsMemory());
+    public delegate void ServerIPCReceivedDelegate();
 }

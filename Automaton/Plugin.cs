@@ -1,5 +1,6 @@
 using Automaton.Configuration;
 using Automaton.IPC;
+using Automaton.Tasks;
 using Automaton.UI;
 using AutoRetainerAPI;
 using Dalamud.Plugin;
@@ -8,7 +9,6 @@ using ECommons.Automation.LegacyTaskManager;
 using ECommons.Configuration;
 using ECommons.SimpleGui;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Reflection;
 
 namespace Automaton;
@@ -27,6 +27,7 @@ public class Plugin : IDalamudPlugin
     public static readonly HashSet<Tweak> Tweaks = [];
     internal TaskManager TaskManager;
     internal AddonObserver AddonObserver;
+    internal Automation Automation;
 
     internal Provider Provider;
     internal NavmeshIPC Navmesh;
@@ -74,6 +75,7 @@ public class Plugin : IDalamudPlugin
 
         AddonObserver = new();
         TaskManager = new();
+        Automation = new();
         Provider = new();
         Navmesh = new();
         AutoRetainerAPI = new();
@@ -122,16 +124,43 @@ public class Plugin : IDalamudPlugin
         Svc.Framework.Update -= EventWatcher;
         C.EnabledTweaks.CollectionChanged -= OnChange;
         AddonObserver.Dispose();
+        Automation.Dispose();
         Memory?.Dispose();
         ECommonsMain.Dispose();
     }
 
     private void OnCommand(string command, string args)
     {
-        if (args.StartsWith('d'))
-            EzConfigGui.GetWindow<DebugWindow>()!.Toggle();
-        else
+        if (args.Length == 0)
             EzConfigGui.Window.Toggle();
+        else
+        {
+            var arguments = args.Split(' ');
+            var subcommand = arguments[0];
+            var @params = arguments.Skip(1).ToArray();
+            switch (subcommand)
+            {
+                case string cmd when cmd.StartsWith('d') && !cmd.EqualsIgnoreCase("disable"):
+                    EzConfigGui.GetWindow<DebugWindow>()!.Toggle();
+                    break;
+                case "enable":
+                    C.EnabledTweaks.Add(@params[0]);
+                    break;
+                case "disable":
+                    C.EnabledTweaks.Remove(@params[0]);
+                    break;
+                case "toggle":
+                    if (C.EnabledTweaks.Contains(@params[0]))
+                        C.EnabledTweaks.Remove(@params[0]);
+                    else
+                        C.EnabledTweaks.Add(@params[0]);
+                    break;
+                case "stop":
+                    P.Automation.Stop();
+                    P.TaskManager.Abort();
+                    break;
+            }
+        }
     }
 
     private void InitializeTweaks()

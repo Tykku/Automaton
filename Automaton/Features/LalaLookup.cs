@@ -1,5 +1,4 @@
 using Dalamud.Game.Gui.ContextMenu;
-using Dalamud.Utility;
 using Lumina.Excel.Sheets;
 using NetStone;
 using NetStone.Search.Character;
@@ -31,7 +30,7 @@ public class LalaLookup : Tweak
 
         menuOpenedArgs.AddMenuItem(new MenuItem
         {
-            PrefixChar = 'A',
+            PrefixChar = 'C',
             Name = "Search on Lala",
             OnClicked = Search,
         });
@@ -94,7 +93,7 @@ public class LalaLookup : Tweak
 
             var lodestoneCharacter = searchResponse?.Results.FirstOrDefault(entry => string.Equals(entry.Name, playerName, StringComparison.OrdinalIgnoreCase));
             if (lodestoneCharacter is not null)
-                Util.OpenLink($"https://lalachievements.com/char/{lodestoneCharacter.Id}/");
+                Dalamud.Utility.Util.OpenLink($"https://lalachievements.com/char/{lodestoneCharacter.Id}/");
             else
                 ModuleMessage($"Unable to find lodestone ID for {playerName}");
         }

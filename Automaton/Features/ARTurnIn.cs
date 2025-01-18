@@ -1,6 +1,7 @@
 ﻿using Automaton.IPC;
-using ECommons.Automation.NeoTaskManager;
-using ECommons.ImGuiMethods;
+using Automaton.Tasks;
+using Dalamud.Interface;
+using Dalamud.Interface.Components;
 using ImGuiNET;
 
 namespace Automaton.Features;
@@ -48,36 +49,16 @@ internal class ARTurnIn : Tweak<ARTurnInConfiguration>
 
         ImGuiX.DrawSection("Debug");
 
-        ImGui.TextUnformatted($"LS:{P.Lifestream.IsBusy()} AR:{P.AutoRetainer.IsBusy()} D:{P.Deliveroo.IsTurnInRunning()} N:{P.Navmesh.IsRunning()}");
-        if (Player.Available)
-            ImGui.TextUnformatted($"o:{PlayerEx.Occupied} m:{Player.IsMoving} c:{PlayerEx.IsCasting} l:{PlayerEx.AnimationLock}");
-
-        if (ImGui.Button("FinishCharacterPostProcess"))
-            AutoRetainer.FinishCharacterPostProcess();
-
-        if (ImGui.Button("TurnIn (All Tasks Combined)"))
-            TurnIn();
-
-        if (ImGui.Button($"GoToGC"))
-            TaskManager.Enqueue(GoToGC);
-
-        if (ImGui.Button($"TurnInGear"))
-            TaskManager.Enqueue(Deliveroo);
-
-        if (ImGui.Button($"GoHome"))
-            TaskManager.Enqueue(GoHome);
-
-        if (TaskManager.Tasks.Count > 0)
+        ImGuiX.TaskState();
+        if (ImGuiComponents.IconButton(P.Automation.CurrentTask == null ? FontAwesomeIcon.Play : FontAwesomeIcon.Stop))
         {
-            ImGuiX.DrawSection("Tasks");
-            if (ImGui.Button($"Kill Tasks : {TaskManager.NumQueuedTasks}"))
-                TaskManager.Abort();
-            ImGuiBB.Text($"[color=#33E6E6]{TaskManager.CurrentTask?.Name}:[/color] [color=#FFFFFF]{TaskManager.CurrentTask?.Function.Method.Name}[/color]");
-            foreach (var task in TaskManager.Tasks)
+            if (P.Automation.CurrentTask == null)
+                P.Automation.Start(new AutoDeliveroo(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
+            else
             {
-                ImGui.Indent();
-                ImGuiBB.Text($"[color=#33E6E6]{task.Name}:[/color] [color=#FFFFFF]{task.Function.Method.Name}[/color]");
-                ImGui.Unindent();
+                P.Automation.Stop();
+                AutoRetainer.FinishCharacterPostProcess();
+                P.UsingARPostProcess = false;
             }
         }
     }
@@ -98,23 +79,5 @@ internal class ARTurnIn : Tweak<ARTurnInConfiguration>
         }
     }
 
-    private void TurnIn()
-    {
-        TaskManager.Enqueue(GoToGC, configuration: LSConfig);
-        TaskManager.EnqueueDelay(1000);
-        TaskManager.Enqueue(Deliveroo, configuration: DConfig);
-        TaskManager.EnqueueDelay(1000);
-        TaskManager.Enqueue(GoHome, configuration: LSConfig);
-        TaskManager.EnqueueDelay(1000);
-        TaskManager.Enqueue(AutoRetainer.FinishCharacterPostProcess);
-        TaskManager.Enqueue(() => P.UsingARPostProcess = false);
-    }
-
-    // bless lifestream for doing literally all the annoying work for me already
-    private void GoToGC() => TaskManager.InsertMulti([new(() => P.Lifestream.ExecuteCommand("gc")), new(() => P.Lifestream.IsBusy()), new(() => !P.Lifestream.IsBusy(), LSConfig)]);
-    private void Deliveroo() => TaskManager.InsertMulti([new(() => Svc.Commands.ProcessCommand("/deliveroo enable")), new(() => P.Deliveroo.IsTurnInRunning()), new(() => !P.Deliveroo.IsTurnInRunning(), DConfig)]);
-    private void GoHome() => TaskManager.InsertMulti([new(P.Lifestream.TeleportToFC), new(() => P.Lifestream.IsBusy()), new(() => !P.Lifestream.IsBusy(), LSConfig)]);
-
-    private TaskManagerConfiguration LSConfig => new(timeLimitMS: 2 * 60 * 1000);
-    private TaskManagerConfiguration DConfig => new(timeLimitMS: 10 * 60 * 1000, abortOnTimeout: false);
+    private void TurnIn() => P.Automation.Start(new AutoDeliveroo(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
 }

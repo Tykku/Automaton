@@ -5,7 +5,6 @@ using Dalamud.Game.Text.SeStringHandling.Payloads;
 using ECommons;
 using ECommons.GameFunctions;
 using FFXIVClientStructs.FFXIV.Client.Game;
-using Lumina.Excel.Sheets;
 
 namespace Automaton.Features;
 
@@ -82,7 +81,7 @@ public unsafe class AutoFollow : Tweak<AutoFollowConfiguration>
 
     private void Follow(IFramework framework)
     {
-        if (!Player.Available || TaskManager.IsBusy) return;
+        if (master == null || !Player.Available || TaskManager.IsBusy) return;
 
         master = Svc.Objects.FirstOrDefault(x => x.EntityId == masterObjectID || !Config.AutoFollowName.IsNullOrEmpty() && x.Name.TextValue.Equals(Config.AutoFollowName, StringComparison.InvariantCultureIgnoreCase));
 

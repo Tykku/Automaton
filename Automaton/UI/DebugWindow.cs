@@ -1,13 +1,7 @@
+using Automaton.UI.Debug.Tabs;
 using Dalamud.Interface.Utility.Raii;
 using Dalamud.Interface.Windowing;
-using ECommons.Automation;
-using ECommons.ImGuiMethods;
-using FFXIVClientStructs.FFXIV.Client.Game;
-using FFXIVClientStructs.FFXIV.Component.GUI;
 using ImGuiNET;
-using Lumina.Excel.Sheets;
-using System.Reflection;
-using System.Runtime.InteropServices;
 
 namespace Automaton.UI;
 
@@ -20,87 +14,58 @@ internal class DebugWindow : Window
             MinimumSize = new Vector2(375, 330),
             MaximumSize = new Vector2(float.MaxValue, float.MaxValue)
         };
+        Tabs = typeof(DebugWindow).Assembly.GetTypes()
+            .Where(t => typeof(IDebugTab).IsAssignableFrom(t) && !t.IsAbstract && !t.IsInterface)
+            .Select(t => (IDebugTab)Activator.CreateInstance(t)!)
+            .ToArray();
     }
 
-    public static void Dispose() { }
+    private const uint SidebarWidth = 250;
+    private readonly IDebugTab[] Tabs;
+    private IDrawableTab? SelectedTab;
 
     public override bool DrawConditions() => Player.Available && C.ShowDebug;
 
-    private Enums.ExecuteCommandFlag flag;
-    private Enums.ExecuteCommandComplexFlag flag2;
-    private int[] ecParams = new int[4];
-    private int[] eccParams = new int[4];
-    private readonly Memory.ExecuteCommands executeCommands = new();
-    public override unsafe void Draw()
+    public override void Draw()
     {
-        using var tabs = ImRaii.TabBar("tabs");
-        if (!tabs) return;
-        using (var tabExecuteCommand = ImRaii.TabItem("ExecuteCommand"))
-        {
-            if (tabExecuteCommand)
-            {
-                ImGuiX.Enum("ExecuteCommand", ref flag);
-                ImGui.InputInt("p1", ref ecParams[0]);
-                ImGui.InputInt("p2", ref ecParams[1]);
-                ImGui.InputInt("p3", ref ecParams[2]);
-                ImGui.InputInt("p4", ref ecParams[3]);
-                if (ImGui.Button("exeucte"))
-                    executeCommands.ExecuteCommand(flag, ecParams[0], ecParams[1], ecParams[2], ecParams[3]);
+        DrawSidebar();
+        ImGui.SameLine();
+        DrawTab();
+    }
 
-                using var id = ImRaii.PushId("complex");
-                ImGuiX.Enum("ExecuteCommandComplex", ref flag2);
-                ImGui.InputInt("p1", ref eccParams[0]);
-                ImGui.InputInt("p2", ref eccParams[1]);
-                ImGui.InputInt("p3", ref eccParams[2]);
-                ImGui.InputInt("p4", ref eccParams[3]);
-                if (ImGui.Button("exeucte"))
-                    executeCommands.ExecuteCommandComplexLocation(flag2, Player.Position, eccParams[0], eccParams[1], eccParams[2], eccParams[3]);
+    private void DrawSidebar()
+    {
+        using var child = ImRaii.Child("Sidebar", new Vector2(SidebarWidth * ImGui.GetIO().FontGlobalScale, -1), true, ImGuiWindowFlags.NoSavedSettings);
+        if (!child || !child.Success) return;
 
-            }
-        }
-        using (var tabMiscTools = ImRaii.TabItem("Misc Tools"))
+        using var table = ImRaii.Table("SidebarTable", 1, ImGuiTableFlags.NoSavedSettings);
+        if (!table || !table.Success) return;
+
+        ImGui.TableSetupColumn("Tab Name", ImGuiTableColumnFlags.WidthStretch);
+
+        foreach (var tab in Tabs)
         {
-            if (tabMiscTools)
-            {
-                List<string> cantSpend = [];
-                if (ImGui.Button("Spend Nuts"))
-                {
-                    if (TryGetAddonByName<AtkUnitBase>("ShopExchangeCurrency", out var addon))
-                    {
-                        const uint nuts = 26533;
-                        var nutsAmt = InventoryManager.Instance()->GetInventoryItemCount(nuts);
-                        var nutsCost = 25;
-                        var freeslots = InventoryManager.Instance()->GetEmptySlotsInBag() + Inventory.GetEmptySlots([InventoryType.ArmoryRings]);
-                        uint tobuy = (uint)Math.Min(nutsAmt / nutsCost, freeslots);
-                        Svc.Log.Info($"{InventoryManager.Instance()->GetEmptySlotsInBag()} {Inventory.GetEmptySlots([InventoryType.ArmoryRings])} {nutsAmt} {nutsAmt / nutsCost} {tobuy}");
-                        Callback.Fire(addon, true, 0, 49, tobuy);
-                    }
-                    else
-                        cantSpend.Add("ShopExchangeCurrency not open");
-                }
-                if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Buys the most amount of {GetRow<Item>(34922)?.Name}");
-                cantSpend.ForEach(x => ImGuiEx.Text((uint)Colors.Red, x));
-            }
+            ImGui.TableNextRow();
+            ImGui.TableNextColumn();
+
+            using var disabled = ImRaii.Disabled(!tab.IsEnabled);
+            if (ImGui.Selectable($"{tab.Title}###Selectable_{tab.InternalName}", SelectedTab == tab))
+                SelectedTab = tab;
         }
-        using (var tabPlayerEx = ImRaii.TabItem($"{nameof(PlayerEx)}"))
+    }
+
+    private unsafe void DrawTab()
+    {
+        if (SelectedTab == null)
         {
-            if (tabPlayerEx)
-            {
-                var pi = typeof(PlayerEx).GetProperties();
-                foreach (var p in pi)
-                {
-                    try
-                    {
-                        ImGui.TextColored(new Vector4(0.2f, 0.6f, 0.4f, 1), $"{p.Name}: ");
-                        ImGui.SameLine();
-                        ImGui.TextDisabled($"{p.GetValue(typeof(PlayerEx))}");
-                    }
-                    catch (Exception e)
-                    {
-                        ImGui.TextColored(new Vector4(1, 0, 0, 1), $"[ERROR] {e.Message}");
-                    }
-                }
-            }
+            ImGui.Dummy(Vector2.Zero);
+            return;
         }
+
+        using var child = SelectedTab.DrawInChild
+            ? ImRaii.Child($"###{SelectedTab.InternalName}_Child", new Vector2(-1), true)
+            : null;
+
+        TryExecute(SelectedTab.Draw);
     }
 }
