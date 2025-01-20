@@ -14,15 +14,6 @@ public class CommandsConfiguration
     [BoolConfig(Label = "/tpflag")]
     public bool EnableTPFlag = false;
 
-    [BoolConfig(Label = "/tpgc")]
-    public bool EnableTPGC = false;
-
-    //[BoolConfig(Label = "/tplast")]
-    //public bool EnableTPLast = false;
-
-    //[BoolConfig(Label = "/tpquest")]
-    //public bool EnableTPQuest = false;
-
     [BoolConfig(Label = "/equip")]
     public bool EnableEquip = false;
 
@@ -44,47 +35,8 @@ public partial class Commands : Tweak<CommandsConfiguration>
 
     #region Teleport Flag
     [CommandHandler(["/tpf", "/tpflag"], "Teleport to the aetheryte nearest your flag", nameof(Config.EnableTPFlag))]
-    internal void OnCommmandTeleportFlag(string command, string arguments)
-    {
-        Coords.TeleportToAetheryte(Coords.GetNearestAetheryte(PlayerEx.MapFlag));
-    }
+    internal void OnCommmandTeleportFlag(string command, string arguments) => Coords.TeleportToAetheryte(Coords.GetNearestAetheryte(PlayerEx.MapFlag));
     #endregion
-
-    #region Teleport GC
-    [CommandHandler("/tpgc", "Teleport to the aetheryte of your grand company", nameof(Config.EnableTPGC))]
-    internal void OnCommmandTeleportGC(string command, string arguments)
-    {
-        switch (Player.GrandCompany)
-        {
-            case GC.Maelstrom:
-                Svc.Commands.ProcessCommand($"/tp {GetRow<Aetheryte>(8)!.Value.PlaceName.Value!.Name}");
-                break;
-            case GC.TwinAdder:
-                Svc.Commands.ProcessCommand($"/tp {GetRow<Aetheryte>(2)!.Value.PlaceName.Value!.Name}");
-                break;
-            case GC.ImmortalFlames:
-                Svc.Commands.ProcessCommand($"/tp {GetRow<Aetheryte>(9)!.Value.PlaceName.Value!.Name}");
-                break;
-            default:
-                ModuleMessage("No Grand Company");
-                break;
-        }
-    }
-    #endregion
-
-    //#region Teleport Quest
-    //[CommandHandler(["/tpq", "/tpquest"], "Teleport to the aetheryte nearest your current quest", nameof(Config.EnableTPQuest))]
-    //internal void OnCommmandTeleportQuest(string command, string arguments)
-    //{
-    //    var quest = Player.QuestLocations.FirstOrDefault();
-    //    if (Player.QuestLocations.Count != 0)
-    //    {
-    //        var aetheryte = Coords.GetNearestAetheryte(quest);
-    //        Svc.Log.Info($"Teleporting to {GetRow<Aetheryte>(aetheryte).AethernetName.Value.Name.RawString} for quest in {GetRow<TerritoryType>(quest.TerritoryTypeId).PlaceName.Value.Name.RawString}");
-    //        Coords.TeleportToAetheryte(aetheryte);
-    //    }
-    //}
-    //#endregion
 
     #region Equip
     [CommandHandler("/equip", "Equip an item by ID", nameof(Config.EnableEquip))]

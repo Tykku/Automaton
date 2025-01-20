@@ -1,5 +1,4 @@
-﻿using Automaton.IPC;
-using Dalamud.Interface;
+﻿using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using ECommons.ImGuiMethods;
 using ImGuiNET;
@@ -12,7 +11,7 @@ public class AddresBookConfiguration
     public List<(string Name, uint Territory, Vector3 Position)> Locations = [];
 }
 
-[Tweak, Requirement(NavmeshIPC.Name, NavmeshIPC.Repo)]
+[Tweak(outdated: true, disabledReason: "Feature is better supported in the Lifestream alias system."), Requirement(NavmeshIPC.Name, NavmeshIPC.Repo)]
 public class AddressBook : Tweak<AddresBookConfiguration>
 {
     public override string Name => "Address Book";
@@ -30,7 +29,7 @@ public class AddressBook : Tweak<AddresBookConfiguration>
         {
             ImGuiEx.TextV(Colors.White, $"{loc.Name}: {loc.Position}");
             ImGui.SameLine();
-            ImGuiX.PathfindButton(P.Navmesh, loc.Position);
+            ImGuiX.PathfindButton(Service.Navmesh, loc.Position);
             ImGui.SameLine();
             if (ImGuiComponents.IconButton(loc.Position.GetHashCode(), FontAwesomeIcon.Trash))
                 Config.Locations.Remove(loc);
@@ -45,7 +44,7 @@ public class AddressBook : Tweak<AddresBookConfiguration>
             {
                 ImGuiEx.TextV(Colors.White, $"{loc.Name}: {loc.Position}");
                 ImGui.SameLine();
-                ImGuiX.PathfindButton(P.Navmesh, loc.Position);
+                ImGuiX.PathfindButton(Service.Navmesh, loc.Position);
                 ImGui.SameLine();
                 if (ImGuiComponents.IconButton(loc.Position.GetHashCode(), FontAwesomeIcon.Trash))
                     Config.Locations.Remove(loc);
@@ -58,6 +57,6 @@ public class AddressBook : Tweak<AddresBookConfiguration>
     {
         var place = Config.Locations.FirstOrDefault(l => l.Name.Contains(arguments));
         if (place != default)
-            P.Navmesh.PathfindAndMoveTo(place.Position, false);
+            Service.Navmesh.PathfindAndMoveTo(place.Position, false);
     }
 }
