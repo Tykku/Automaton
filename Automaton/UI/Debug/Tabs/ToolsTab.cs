@@ -42,8 +42,8 @@ internal unsafe class ToolsTab : DebugTab
                     var item = GetRow<Item>(slot->ItemId)!;
                     if (item.Value.ItemSortCategory.Value.Param is 175 or 160)
                     {
-                        P.TaskManager.Enqueue(() => AgentInventoryContext.Instance()->UseItem(slot->ItemId));
-                        P.TaskManager.Enqueue(() => !Player.IsAnimationLocked && !PlayerEx.IsBusy && !PlayerEx.IsCasting);
+                        Service.TaskManager.Enqueue(() => AgentInventoryContext.Instance()->UseItem(slot->ItemId));
+                        Service.TaskManager.Enqueue(() => !Player.IsAnimationLocked && !PlayerEx.IsBusy && !PlayerEx.IsCasting);
                     }
                     //ActionManager.Instance()->UseAction(ActionType.Item, slot->ItemId);
                 }

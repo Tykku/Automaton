@@ -1,5 +1,3 @@
-using Automaton.IPC;
-using AutoRetainerAPI;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
@@ -11,7 +9,6 @@ namespace Automaton.FeaturesSetup;
 
 public abstract partial class Tweak : ITweak
 {
-    // https://github.com/Haselnussbomber/HaselTweaks
     public Tweak()
     {
         CachedType = GetType();
@@ -20,12 +17,8 @@ public abstract partial class Tweak : ITweak
         Requirements = CachedType.GetCustomAttributes<RequirementAttribute>().ToArray();
         Outdated = CachedType.GetCustomAttribute<TweakAttribute>()?.Outdated ?? false;
         Disabled = CachedType.GetCustomAttribute<TweakAttribute>()?.Disabled ?? false;
+        DisabledReason = CachedType.GetCustomAttribute<TweakAttribute>()?.DisabledReason;
         IsDebug = CachedType.GetCustomAttribute<TweakAttribute>()?.Debug ?? false;
-
-        TaskManager = new();
-
-        if (Requirements.Any(r => r.InternalName == AutoRetainerIPC.Name))
-            AutoRetainer = new(Name);
 
         try
         {
@@ -61,6 +54,10 @@ public abstract partial class Tweak : ITweak
             return;
         }
 
+        if (Requirements.Any(r => r.InternalName == AutoRetainerIPC.Name))
+            AutoRetainer = new(Name);
+
+        TaskManager = new();
         Ready = true;
     }
 
@@ -77,6 +74,7 @@ public abstract partial class Tweak : ITweak
     public bool Ready { get; protected set; }
     public bool Enabled { get; protected set; }
     public bool Disabled { get; protected set; }
+    public string? DisabledReason { get; protected set; }
 
     protected TaskManager TaskManager = null!;
     protected AutoRetainerApi AutoRetainer = null!;

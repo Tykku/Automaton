@@ -1,6 +1,9 @@
 global using Automaton.FeaturesSetup;
 global using Automaton.FeaturesSetup.Attributes;
+global using Automaton.IPC;
+global using Automaton.Services;
 global using Automaton.Utilities;
+global using AutoRetainerAPI;
 global using Dalamud.Game.Addon.Lifecycle;
 global using Dalamud.Game.Addon.Lifecycle.AddonArgTypes;
 global using Dalamud.Game.ClientState.Conditions;

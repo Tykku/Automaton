@@ -13,7 +13,7 @@ using System.Runtime.InteropServices;
 
 namespace Automaton.Utilities;
 #pragma warning disable CS0649
-internal unsafe class Memory
+public unsafe class Memory
 {
     public static class Signatures
     {

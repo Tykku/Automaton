@@ -95,7 +95,7 @@ public static class Utils
         if (modifier.HasFlag(ModifierFlag.Alt))
             keys.Add(0x12); // VK_MENU
 
-        nint mappedKey = (nint)key;
+        var mappedKey = (nint)key;
         if (mappedKey == 0)
             return null;
 

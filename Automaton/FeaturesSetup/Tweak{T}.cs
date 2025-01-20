@@ -7,7 +7,6 @@ namespace Automaton.FeaturesSetup;
 
 public abstract class Tweak<T> : Tweak
 {
-    // https://github.com/Haselnussbomber/HaselTweaks
     public Tweak() : base()
     {
         CachedConfigType = typeof(T);
@@ -59,16 +58,12 @@ public abstract class Tweak<T> : Tweak
             var enabled = string.IsNullOrEmpty(attr.ConfigFieldName);
 
             if (!string.IsNullOrEmpty(attr.ConfigFieldName))
-            {
                 enabled |= (typeof(T).GetField(attr.ConfigFieldName)?.GetValue(Config) as bool?)
                     ?? throw new InvalidOperationException($"Configuration field {attr.ConfigFieldName} in {typeof(T).Name} not found.");
-            }
 
             if (enabled)
-            {
                 foreach (var c in attr.Commands)
                     EnableCommand(c, attr.HelpMessage, methodInfo, attr.Hooks);
-            }
         }
     }
 
@@ -80,16 +75,12 @@ public abstract class Tweak<T> : Tweak
             var enabled = string.IsNullOrEmpty(attr.ConfigFieldName);
 
             if (!string.IsNullOrEmpty(attr.ConfigFieldName))
-            {
                 enabled |= (typeof(T).GetField(attr.ConfigFieldName)?.GetValue(Config) as bool?)
                     ?? throw new InvalidOperationException($"Configuration field {attr.ConfigFieldName} in {typeof(T).Name} not found.");
-            }
 
             if (enabled)
-            {
                 foreach (var c in attr.Commands)
                     DisableCommand(c);
-            }
         }
     }
 
@@ -104,21 +95,15 @@ public abstract class Tweak<T> : Tweak
             var enabled = string.IsNullOrEmpty(attr.ConfigFieldName);
 
             if (!string.IsNullOrEmpty(attr.ConfigFieldName))
-            {
                 enabled |= (typeof(T).GetField(attr.ConfigFieldName)?.GetValue(Config) as bool?)
                     ?? throw new InvalidOperationException($"Configuration field {attr.ConfigFieldName} in {typeof(T).Name} not found.");
-            }
 
             if (enabled)
-            {
                 foreach (var c in attr.Commands)
                     EnableCommand(c, attr.HelpMessage, methodInfo, attr.Hooks);
-            }
             else
-            {
                 foreach (var c in attr.Commands)
                     DisableCommand(c);
-            }
         }
 
         base.OnConfigChangeInternal(fieldName);
@@ -128,25 +113,17 @@ public abstract class Tweak<T> : Tweak
     {
         var handler = methodInfo.CreateDelegate<IReadOnlyCommandInfo.HandlerDelegate>(this);
 
-        if (Svc.Commands.AddHandler(command, new CommandInfo(handler) { HelpMessage = helpMessage }))
-        {
+        if (Svc.Commands.AddHandler(command, new CommandInfo(handler) { HelpMessage = helpMessage, DisplayOrder = 1 }))
             Log($"Added CommandHandler for {command}");
-        }
         else
-        {
             Warning($"Could not add CommandHandler for {command}");
-        }
     }
 
     private void DisableCommand(string command)
     {
         if (Svc.Commands.RemoveHandler(command))
-        {
             Log($"Removed CommandHandler for {command}");
-        }
         else
-        {
             Warning($"Could not remove CommandHandler for {command}");
-        }
     }
 }

@@ -51,12 +51,12 @@ public unsafe class ClickToMove : Tweak<ClickToMoveConfiguration>
                     Svc.GameGui.ScreenToWorld(ImGui.GetIO().MousePos, out var pos, 100000f);
                     if (Config.MovementType == Enums.MovementType.Pathfind)
                     {
-                        if (!P.Navmesh.IsRunning())
-                            P.Navmesh.PathfindAndMoveTo(pos, false);
+                        if (!Service.Navmesh.IsRunning())
+                            Service.Navmesh.PathfindAndMoveTo(pos, false);
                         else
                         {
-                            P.Navmesh.Stop();
-                            P.Navmesh.PathfindAndMoveTo(pos, false);
+                            Service.Navmesh.Stop();
+                            Service.Navmesh.PathfindAndMoveTo(pos, false);
                         }
                         return;
                     }

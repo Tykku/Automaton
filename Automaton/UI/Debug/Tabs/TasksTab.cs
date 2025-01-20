@@ -7,9 +7,9 @@ internal unsafe class TasksTab : DebugTab
 {
     public override void Draw()
     {
-        using (ImRaii.Disabled(!P.Automation.Running))
+        using (ImRaii.Disabled(!Service.Automation.Running))
             if (ImGui.Button("Stop current task"))
-                P.Automation.Stop();
+                Service.Automation.Stop();
         ImGuiX.TaskState();
 
         if (AgentMap.Instance()->IsFlagMarkerSet != 0)

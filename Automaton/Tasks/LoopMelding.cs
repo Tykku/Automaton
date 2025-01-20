@@ -17,7 +17,7 @@ public sealed class LoopMelding(GameInventoryItem item) : CommonTasks
             await WaitUntilThenFalse(() => Svc.Condition[ConditionFlag.MeldingMateria], "Melding");
 
             Status = $"Retrieving [{current}/{max}]";
-            P.Memory.MaterializeAction(item, MaterializeEventId.Retrieve);
+            Service.Memory.MaterializeAction(item, MaterializeEventId.Retrieve);
             await WaitUntilThenFalse(() => Svc.Condition[ConditionFlag.Occupied39], "Retrieving");
             current++;
         }

@@ -114,7 +114,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             return;
         }
 
-        P.Memory.SalvageItem(AgentSalvage.Instance(), item, 0, 0);
+        Service.Memory.SalvageItem(AgentSalvage.Instance(), item, 0, 0);
         var retval = new AtkValue();
         Span<AtkValue> param = [
             new AtkValue { Type = ValueType.Int, Int = 0 },
@@ -172,7 +172,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
 
     #region Kill Flag
     [CommandHandler("/killflag", "", nameof(Config.EnableTPFlag))]
-    internal unsafe void OnCommandKillFlag(string command, string arguments) => P.Automation.Start(new KillFlag());
+    internal unsafe void OnCommandKillFlag(string command, string arguments) => Service.Automation.Start(new KillFlag());
     #endregion
 
 }

@@ -2,13 +2,7 @@
 using FFXIVClientStructs.FFXIV.Client.System.String;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using ImGuiNET;
-using Lumina.Excel;
 using Lumina.Excel.Sheets;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Automaton.UI.Debug.Tabs;
 internal unsafe class KeybindsTab : DebugTab

@@ -1,4 +1,3 @@
-using Automaton.IPC;
 using Automaton.UI;
 using Dalamud.Game.ClientState.Fates;
 using Dalamud.Game.ClientState.Objects.Enums;
@@ -212,10 +211,10 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
             }
         }
 
-        if (P.Navmesh.IsRunning())
+        if (Service.Navmesh.IsRunning())
         {
             if (DistanceToTarget() < 2 || (Svc.Targets.Target != null && DistanceToHitboxEdge(Svc.Targets.Target.HitboxRadius) <= (Config.StayInMeleeRange ? 0 : 15)))
-                P.Navmesh.Stop();
+                Service.Navmesh.Stop();
             else
                 return;
         }
@@ -286,12 +285,12 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
             }
 
             var nextFate = GetFates().FirstOrDefault();
-            if ((Config.FullAuto || Config.PathToFate) && nextFate is not null && Svc.Condition[ConditionFlag.InFlight] && !P.Navmesh.PathfindInProgress())
+            if ((Config.FullAuto || Config.PathToFate) && nextFate is not null && Svc.Condition[ConditionFlag.InFlight] && !Service.Navmesh.PathfindInProgress())
             {
                 Svc.Log.Debug("Finding path to fate");
                 nextFateID = nextFate.FateId;
                 TargetPos = GetRandomPointInFate(nextFateID);
-                P.Navmesh.PathfindAndMoveTo(TargetPos, true);
+                Service.Navmesh.PathfindAndMoveTo(TargetPos, true);
             }
         }
     }
@@ -304,9 +303,9 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
         {
             Svc.Targets.Target = target;
         }
-        if ((Config.FullAuto || Config.AutoMoveToMobs) && !P.Navmesh.PathfindInProgress() && !IsInMeleeRange(target.HitboxRadius + (Config.StayInMeleeRange ? 0 : 15)))
+        if ((Config.FullAuto || Config.AutoMoveToMobs) && !Service.Navmesh.PathfindInProgress() && !IsInMeleeRange(target.HitboxRadius + (Config.StayInMeleeRange ? 0 : 15)))
         {
-            P.Navmesh.PathfindAndMoveTo(TargetPos, false);
+            Service.Navmesh.PathfindAndMoveTo(TargetPos, false);
         }
     }
 
@@ -378,7 +377,7 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
         var fate = FateManager.Instance()->GetFateById(fateID);
         var angle = random.NextDouble() * 2 * Math.PI;
         var randomPoint = new Vector3((float)(fate->Location.X + fate->Radius / 2 * Math.Cos(angle)), fate->Location.Y, (float)(fate->Location.Z + fate->Radius / 2 * Math.Sin(angle)));
-        var point = P.Navmesh.NearestPoint(randomPoint, 5, 5);
+        var point = Service.Navmesh.NearestPoint(randomPoint, 5, 5);
         return (Vector3)(point == null ? fate->Location : point);
     }
 

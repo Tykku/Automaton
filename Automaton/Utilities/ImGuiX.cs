@@ -1,4 +1,3 @@
-using Automaton.IPC;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Textures.TextureWraps;
@@ -232,5 +231,5 @@ public static class ImGuiX
         return res;
     }
 
-    public static void TaskState() => ImGui.TextUnformatted($"State: {P.Automation.CurrentTask?.Status ?? "Idle"}");
+    public static void TaskState() => ImGui.TextUnformatted($"State: {Service.Automation.CurrentTask?.Status ?? "Idle"}");
 }

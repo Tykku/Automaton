@@ -21,7 +21,7 @@ internal class FateTrackerUI(DateWithDestiny tweak) : Window($"Fate Tracker##{na
         if (ImGuiComponents.IconButton(!_tweak.active ? FontAwesomeIcon.Play : FontAwesomeIcon.Stop))
         {
             _tweak.active ^= true;
-            P.Navmesh.Stop();
+            Service.Navmesh.Stop();
         }
         //ImGui.SameLine();
         //if (ImGuiComponents.IconButtonWithText((FontAwesomeIcon)0xf002, "Browse"))
@@ -43,10 +43,10 @@ internal class FateTrackerUI(DateWithDestiny tweak) : Window($"Fate Tracker##{na
 
             if (ImGuiComponents.IconButton($"###Pathfind{fate.FateId}", FontAwesomeIcon.Map))
             {
-                if (!P.Navmesh.IsRunning())
-                    P.Navmesh.PathfindAndMoveTo(_tweak.GetRandomPointInFate(fate.FateId), Svc.Condition[ConditionFlag.InFlight]);
+                if (!Service.Navmesh.IsRunning())
+                    Service.Navmesh.PathfindAndMoveTo(_tweak.GetRandomPointInFate(fate.FateId), Svc.Condition[ConditionFlag.InFlight]);
                 else
-                    P.Navmesh.Stop();
+                    Service.Navmesh.Stop();
             }
             if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Pathfind to {fate.Position}");
 

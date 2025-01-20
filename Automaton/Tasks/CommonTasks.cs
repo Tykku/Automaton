@@ -19,10 +19,10 @@ public abstract class CommonTasks : AutoTask
             await Mount();
 
         // ensure navmesh is ready
-        await WaitWhile(() => P.Navmesh.BuildProgress() >= 0, "BuildMesh");
-        ErrorIf(!P.Navmesh.IsReady(), "Failed to build navmesh for the zone");
-        ErrorIf(!P.Navmesh.PathfindAndMoveTo(dest, fly), "Failed to start pathfinding to destination");
-        using var stop = new OnDispose(P.Navmesh.Stop);
+        await WaitWhile(() => Service.Navmesh.BuildProgress() >= 0, "BuildMesh");
+        ErrorIf(!Service.Navmesh.IsReady(), "Failed to build navmesh for the zone");
+        ErrorIf(!Service.Navmesh.PathfindAndMoveTo(dest, fly), "Failed to start pathfinding to destination");
+        using var stop = new OnDispose(Service.Navmesh.Stop);
         await WaitWhile(() => !(Player.DistanceTo(dest) < tolerance), "Navigate");
     }
 

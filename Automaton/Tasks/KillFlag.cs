@@ -21,8 +21,8 @@ public sealed class KillFlag : CommonTasks
     private async Task FlyFlag()
     {
         Chat.Instance.SendMessage("/vnav flyflag");
-        await WaitUntil(() => P.Navmesh.IsRunning(), "Starting");
-        await WaitUntil(() => !P.Navmesh.IsRunning(), "Stopping");
+        await WaitUntil(() => Service.Navmesh.IsRunning(), "Starting");
+        await WaitUntil(() => !Service.Navmesh.IsRunning(), "Stopping");
     }
 
     private async Task Kill()

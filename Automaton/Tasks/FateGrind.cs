@@ -52,7 +52,7 @@ public sealed class FateGrind(DateWithDestiny tweak) : CommonTasks
             if (!InFate)
             {
                 var nextFate = GetFates().FirstOrDefault();
-                if (nextFate is not null && Svc.Condition[ConditionFlag.InFlight] && !P.Navmesh.PathfindInProgress())
+                if (nextFate is not null && Svc.Condition[ConditionFlag.InFlight] && !Service.Navmesh.PathfindInProgress())
                 {
                     nextFateId = nextFate.FateId;
                     TargetPos = GetRandomPointInFate(nextFateId);
@@ -84,7 +84,7 @@ public sealed class FateGrind(DateWithDestiny tweak) : CommonTasks
         var angle = new Random().NextDouble() * 2 * Math.PI;
         // Get a random point in a circle within half its radius
         var randomPoint = new Vector3((float)(fate->Location.X + fate->Radius / 2 * Math.Cos(angle)), fate->Location.Y, (float)(fate->Location.Z + fate->Radius / 2 * Math.Sin(angle)));
-        var point = P.Navmesh.NearestPoint(randomPoint, 5, 5);
+        var point = Service.Navmesh.NearestPoint(randomPoint, 5, 5);
         return (Vector3)(point == null ? fate->Location : point);
     }
 

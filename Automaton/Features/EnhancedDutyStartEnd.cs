@@ -94,7 +94,7 @@ public class EnhancedDutyStartEnd : Tweak<EnhancedDutyStartEndConfiguration>
         var allPlayersInParty = Config.Players.Count > 0 && Config.Players.IsSubsetOf(Svc.Party.Select(p => p.Name.TextValue));
         var noPlayersInParty = Config.Players.Count > 0 && !Config.Players.Any(p => Svc.Party.Any(pm => pm.Name.TextValue == p));
         if (Config.CheckForAll && !allPlayersInParty || Config.CheckForAny && noPlayersInParty)
-            P.Memory.AbandonDuty(false);
+            Service.Memory.AbandonDuty(false);
     }
 
     private static uint _territoryID;
@@ -112,7 +112,7 @@ public class EnhancedDutyStartEnd : Tweak<EnhancedDutyStartEndConfiguration>
         if (Config.AutoLeaveOnEnd)
         {
             TaskManager.EnqueueDelay(Config.TimeToWait.Ms());
-            TaskManager.Enqueue(() => P.Memory.AbandonDuty(false));
+            TaskManager.Enqueue(() => Service.Memory.AbandonDuty(false));
         }
     }
 
