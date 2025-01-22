@@ -76,20 +76,7 @@ public static class Coords
         return (0, default);
     }
 
-    public static unsafe Vector3 MapMarkerToWorld(FlagMapMarker marker)
-    {
-        if (AgentMap.Instance()->IsFlagMarkerSet == 0) throw new Exception("Flag not set");
-        Vector3 v = new(marker.XFloat, 1024, marker.YFloat);
-        var row = GetRow<Sheets.Map>(marker.MapId);
-        if (row is { } map)
-        {
-            var scale = map.SizeFactor / 100f;
-            v.X = (v.X / scale) - map.OffsetX - 1024 / scale;
-            v.Z = (v.Z / scale) - map.OffsetY - 1024 / scale;
-            return Service.Navmesh.PointOnFloor(v, false, 5) ?? v;
-        }
-        return default;
-    }
+    public static unsafe Vector3 MapMarkerToWorld(FlagMapMarker marker) => AgentMap.Instance()->IsFlagMarkerSet == 1 ? new(marker.XFloat, 1024, marker.YFloat) : throw new Exception("Flag not set");
 
     public static uint GetNearestAetheryte(MapMarkerData marker) => GetNearestAetheryte(marker.TerritoryTypeId, new Vector3(marker.X, marker.Y, marker.Z));
     public static uint GetNearestAetheryte(FlagMapMarker flag) => GetNearestAetheryte((int)flag.TerritoryId, new Vector3(flag.XFloat, 0, flag.YFloat));

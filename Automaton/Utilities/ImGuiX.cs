@@ -10,6 +10,7 @@ using ImGuiNET;
 using System.ComponentModel;
 using System.Reflection;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Automaton.Utilities;
 public static class ImGuiX
@@ -232,4 +233,10 @@ public static class ImGuiX
     }
 
     public static void TaskState() => ImGui.TextUnformatted($"State: {Service.Automation.CurrentTask?.Status ?? "Idle"}");
+
+    public static void DrawTableColumn(string name)
+    {
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(name);
+    }
 }
