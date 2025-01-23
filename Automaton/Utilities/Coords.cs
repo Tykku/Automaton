@@ -29,7 +29,8 @@ public static class Coords
         return (coord * factor - 1024f) / scale - offset * 0.001f;
     }
 
-    public static uint FindClosestAetheryte(uint territoryTypeId, Vector3 worldPos)
+    public static uint FindClosestAetheryte(FlagMapMarker flag, bool includeAethernet = true) => FindClosestAetheryte(flag.TerritoryId, FlagToWorld(flag));
+    public static uint FindClosestAetheryte(uint territoryTypeId, Vector3 worldPos, bool includeAethernet = true)
     {
         if (territoryTypeId == 886)
         {
@@ -39,7 +40,7 @@ public static class Coords
         }
         if (territoryTypeId == 478) // Hinterlands
             return 75; // Idyllshire
-        List<Sheets.Aetheryte> aetherytes = [.. GetSheet<Sheets.Aetheryte>()?.Where(a => a.Territory.RowId == territoryTypeId)];
+        List<Sheets.Aetheryte> aetherytes = [.. GetSheet<Sheets.Aetheryte>()?.Where(a => a.Territory.RowId == territoryTypeId && (includeAethernet || a.IsAetheryte))];
         return aetherytes.Count > 0 ? aetherytes.MinBy(a => (worldPos - AetherytePosition(a)).LengthSquared()).RowId : 0;
     }
 
@@ -76,73 +77,73 @@ public static class Coords
         return (0, default);
     }
 
-    public static unsafe Vector3 MapMarkerToWorld(FlagMapMarker marker) => AgentMap.Instance()->IsFlagMarkerSet == 1 ? new(marker.XFloat, 1024, marker.YFloat) : throw new Exception("Flag not set");
+    public static unsafe Vector3 FlagToWorld(FlagMapMarker marker) => AgentMap.Instance()->IsFlagMarkerSet == 1 ? new(marker.XFloat, 1024, marker.YFloat) : throw new Exception("Flag not set");
 
-    public static uint GetNearestAetheryte(MapMarkerData marker) => GetNearestAetheryte(marker.TerritoryTypeId, new Vector3(marker.X, marker.Y, marker.Z));
-    public static uint GetNearestAetheryte(FlagMapMarker flag) => GetNearestAetheryte((int)flag.TerritoryId, new Vector3(flag.XFloat, 0, flag.YFloat));
+    //public static uint GetNearestAetheryte(MapMarkerData marker) => GetNearestAetheryte(marker.TerritoryTypeId, new Vector3(marker.X, marker.Y, marker.Z));
+    //public static uint GetNearestAetheryte(FlagMapMarker flag) => GetNearestAetheryte((int)flag.TerritoryId, new Vector3(flag.XFloat, 0, flag.YFloat));
 
-    public static uint GetNearestAetheryte(int zoneID, Vector3 pos)
-    {
-        uint aetheryte = 0;
-        double distance = 0;
-        foreach (var data in GetSheet<Sheets.Aetheryte>())
-        {
-            if (!data.IsAetheryte) continue;
-            if (!data.Territory.IsValid) continue;
-            if (!data.PlaceName.IsValid) continue;
-            if (data.Territory.Value.RowId == zoneID)
-            {
-                var mapMarker = FindRow<MapMarker>(m => m.DataType == 3 && m.DataKey.RowId == data.RowId);
-                if (mapMarker == null)
-                {
-                    Svc.Log.Error($"Cannot find aetherytes position for {zoneID}#{data.PlaceName.Value.Name}");
-                    continue;
-                }
-                var AethersX = ConvertMapMarkerToMapCoordinate(mapMarker.Value.X, 100);
-                var AethersY = ConvertMapMarkerToMapCoordinate(mapMarker.Value.Y, 100);
-                var temp_distance = Math.Pow(AethersX - pos.X, 2) + Math.Pow(AethersY - pos.Z, 2);
-                if (aetheryte == default || temp_distance < distance)
-                {
-                    distance = temp_distance;
-                    aetheryte = data.RowId;
-                }
-            }
-        }
+    //public static uint GetNearestAetheryte(int zoneID, Vector3 pos)
+    //{
+    //    uint aetheryte = 0;
+    //    double distance = 0;
+    //    foreach (var data in GetSheet<Sheets.Aetheryte>())
+    //    {
+    //        if (!data.IsAetheryte) continue;
+    //        if (!data.Territory.IsValid) continue;
+    //        if (!data.PlaceName.IsValid) continue;
+    //        if (data.Territory.Value.RowId == zoneID)
+    //        {
+    //            var mapMarker = FindRow<MapMarker>(m => m.DataType == 3 && m.DataKey.RowId == data.RowId);
+    //            if (mapMarker == null)
+    //            {
+    //                Svc.Log.Error($"Cannot find aetherytes position for {zoneID}#{data.PlaceName.Value.Name}");
+    //                continue;
+    //            }
+    //            var AethersX = ConvertMapMarkerToMapCoordinate(mapMarker.Value.X, 100);
+    //            var AethersY = ConvertMapMarkerToMapCoordinate(mapMarker.Value.Y, 100);
+    //            var temp_distance = Math.Pow(AethersX - pos.X, 2) + Math.Pow(AethersY - pos.Z, 2);
+    //            if (aetheryte == default || temp_distance < distance)
+    //            {
+    //                distance = temp_distance;
+    //                aetheryte = data.RowId;
+    //            }
+    //        }
+    //    }
 
-        return aetheryte;
-    }
+    //    return aetheryte;
+    //}
 
     public static uint? GetPrimaryAetheryte(uint zoneID) => FindRow<Sheets.Aetheryte>(a => a.Territory.IsValid && a.Territory.Value.RowId == zoneID)?.RowId ?? null;
 
-    private static float ConvertMapMarkerToMapCoordinate(int pos, float scale)
-    {
-        var num = scale / 100f;
-        var rawPosition = (int)((float)(pos - 1024.0) / num * 1000f);
-        return ConvertRawPositionToMapCoordinate(rawPosition, scale);
-    }
+    //private static float ConvertMapMarkerToMapCoordinate(int pos, float scale)
+    //{
+    //    var num = scale / 100f;
+    //    var rawPosition = (int)((float)(pos - 1024.0) / num * 1000f);
+    //    return ConvertRawPositionToMapCoordinate(rawPosition, scale);
+    //}
 
-    private static float ConvertRawPositionToMapCoordinate(int pos, float scale)
-    {
-        var num = scale / 100f;
-        return (float)((pos / 1000f * num + 1024.0) / 2048.0 * 41.0 / num + 1.0);
-    }
+    //private static float ConvertRawPositionToMapCoordinate(int pos, float scale)
+    //{
+    //    var num = scale / 100f;
+    //    return (float)((pos / 1000f * num + 1024.0) / 2048.0 * 41.0 / num + 1.0);
+    //}
 
-    public static unsafe void TeleportToAetheryte(uint aetheryteID)
-    {
-        Telepo.Instance()->Teleport(aetheryteID, 0);
-    }
+    //public static unsafe void TeleportToAetheryte(uint aetheryteID)
+    //{
+    //    Telepo.Instance()->Teleport(aetheryteID, 0);
+    //}
 
-    private static TextPayload? GetInstanceIcon(int? instance)
-    {
-        return instance switch
-        {
-            1 => new TextPayload(SeIconChar.Instance1.ToIconString()),
-            2 => new TextPayload(SeIconChar.Instance2.ToIconString()),
-            3 => new TextPayload(SeIconChar.Instance3.ToIconString()),
-            _ => default,
-        };
-    }
+    //private static TextPayload? GetInstanceIcon(int? instance)
+    //{
+    //    return instance switch
+    //    {
+    //        1 => new TextPayload(SeIconChar.Instance1.ToIconString()),
+    //        2 => new TextPayload(SeIconChar.Instance2.ToIconString()),
+    //        3 => new TextPayload(SeIconChar.Instance3.ToIconString()),
+    //        _ => default,
+    //    };
+    //}
 
-    public static uint? GetMapID(uint territory) => GetRow<TerritoryType>(territory)?.Map.Value.RowId ?? null;
-    public static float GetMapScale(uint? territory = null) => GetRow<TerritoryType>(territory ?? Svc.ClientState.TerritoryType)?.Map.Value.SizeFactor ?? 100f;
+    //public static uint? GetMapID(uint territory) => GetRow<TerritoryType>(territory)?.Map.Value.RowId ?? null;
+    //public static float GetMapScale(uint? territory = null) => GetRow<TerritoryType>(territory ?? Svc.ClientState.TerritoryType)?.Map.Value.SizeFactor ?? 100f;
 }

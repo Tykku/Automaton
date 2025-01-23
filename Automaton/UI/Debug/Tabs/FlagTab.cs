@@ -17,7 +17,7 @@ internal unsafe class FlagTab : DebugTab
 
         ImGui.TextUnformatted($"Map Position: {new Vector2(PlayerEx.MapFlag.XFloat, PlayerEx.MapFlag.YFloat)}");
 
-        var pos = Coords.MapMarkerToWorld(PlayerEx.MapFlag);
+        var pos = Coords.FlagToWorld(PlayerEx.MapFlag);
         ImGui.TextUnformatted($"World Position: {pos}");
 
         var territory = PlayerEx.MapFlag.TerritoryId;

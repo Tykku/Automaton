@@ -1,5 +1,4 @@
 ﻿using Dalamud.Game.ClientState.Objects.Types;
-using ECommons.Automation;
 using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
 
@@ -13,21 +12,24 @@ public sealed class KillFlag : CommonTasks
         Status = "Mounting";
         await Mount();
         Status = "Moving To";
-        Chat.Instance.SendMessage("/vnav flyflag");
-        //await FlyFlag();
-        //await Kill();
-    }
-
-    private async Task FlyFlag()
-    {
-        Chat.Instance.SendMessage("/vnav flyflag");
-        await WaitUntil(() => Service.Navmesh.IsRunning(), "Starting");
-        await WaitUntil(() => !Service.Navmesh.IsRunning(), "Stopping");
+        await MoveTo(PlayerEx.MapFlag, 5, true, true);
+        await Kill();
     }
 
     private async Task Kill()
     {
-        var target = Svc.Objects.FirstOrDefault(o => o is IBattleNpc mob && mob.IsHunt(), null);
-        if (target == null) return;
+        if (Svc.Objects.FirstOrDefault(o => o is IBattleNpc mob && mob.IsHunt(), null) is { } target)
+        {
+            Svc.Targets.Target = target;
+            Service.BossMod.SetActive("VBM Default");
+            await TargetDead(target);
+            Service.BossMod.ClearActive();
+        }
+    }
+
+    private async Task TargetDead(DGameObject target)
+    {
+        while (target != null && !target.IsDead)
+            await NextFrame(30);
     }
 }

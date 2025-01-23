@@ -35,7 +35,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
 
     #region Teleport Flag
     [CommandHandler(["/tpf", "/tpflag"], "Teleport to the aetheryte nearest your flag", nameof(Config.EnableTPFlag))]
-    internal void OnCommmandTeleportFlag(string command, string arguments) => Coords.TeleportToAetheryte(Coords.GetNearestAetheryte(PlayerEx.MapFlag));
+    internal void OnCommmandTeleportFlag(string command, string arguments) => Coords.ExecuteTeleport(Coords.FindClosestAetheryte(PlayerEx.MapFlag, false));
     #endregion
 
     #region Equip

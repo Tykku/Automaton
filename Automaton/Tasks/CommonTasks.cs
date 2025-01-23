@@ -1,4 +1,5 @@
 ﻿using Automaton.Utilities.Movement;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
 using Achievement = FFXIVClientStructs.FFXIV.Client.Game.UI.Achievement;
@@ -9,13 +10,19 @@ public abstract class CommonTasks : AutoTask
     private readonly OverrideMovement movement = new();
     private readonly Memory.AchievementProgress achv = new();
 
+    protected async Task MoveTo(FlagMapMarker flag, float tolerance, bool mount = false, bool fly = false)
+    {
+        var pof = Service.Navmesh.PointOnFloor(Coords.FlagToWorld(flag), false, 5) ?? Coords.FlagToWorld(flag);
+        await MoveTo(pof, tolerance, mount, fly);
+    }
+
     protected async Task MoveTo(Vector3 dest, float tolerance, bool mount = false, bool fly = false)
     {
         using var scope = BeginScope("MoveTo");
         if (Player.DistanceTo(dest) < tolerance)
             return; // already in range
 
-        if (mount)
+        if (mount || fly)
             await Mount();
 
         // ensure navmesh is ready

@@ -127,6 +127,6 @@ internal static partial class Extensions
         return output;
     }
 
-    public static Vector3 ToVector3(this FlagMapMarker flag) => Coords.MapMarkerToWorld(flag);
+    public static Vector3 ToVector3(this FlagMapMarker flag) => Coords.FlagToWorld(flag);
 }
 
