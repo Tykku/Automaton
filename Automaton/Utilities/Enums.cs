@@ -176,7 +176,6 @@ public static class Enums
 
     public enum LinkHandlerId : uint
     {
-        RelayLinkPayload = 0,
-        BetterOutfitIndicator = 1,
+        RelayLinkPayload,
     }
 }

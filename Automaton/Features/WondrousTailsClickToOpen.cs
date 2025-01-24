@@ -74,7 +74,7 @@ internal class WondrousTailsClickToOpen : Tweak
     private unsafe List<uint> GetInstanceListFromId(uint orderDataId)
     {
         var bingoOrderData = GetSheet<WeeklyBingoOrderData>().GetRow(orderDataId);
-        Svc.Log.Info($"{nameof(OnDutySlotClick)}: [row={bingoOrderData.RowId}; type={bingoOrderData.Type}; text={bingoOrderData.Text.Value.Description};]");
+        Debug($"{nameof(OnDutySlotClick)}: [row={bingoOrderData.RowId}; type={bingoOrderData.Type}; text={bingoOrderData.Text.Value.Description};]");
         switch (bingoOrderData.Type)
         {
             // Specific Duty
@@ -252,7 +252,7 @@ internal class WondrousTailsClickToOpen : Tweak
                     .ToList();
         }
 
-        Svc.Log.Info($"[{Name}] Unrecognized ID: {orderDataId}");
+        Warning($"[{Name}] Unrecognized ID: {orderDataId}");
         return [];
     }
 

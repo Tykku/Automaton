@@ -192,7 +192,7 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
                 var (world, instance, relayType) = DetectWorldInstanceRelayType(message);
                 if ((RelayTypes)relayType == RelayTypes.None)
                 {
-                    Svc.Log.Info($"Failed to detect relay type in {nameof(MapLinkPayload)} message: {message}");
+                    Information($"Failed to detect relay type in {nameof(MapLinkPayload)} message: {message}");
                     return;
                 }
                 if (world == null && Config.AssumeBlankWorldsAreLocal)
@@ -211,30 +211,30 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
                                 .FirstOrDefault(Player.Object.CurrentWorld.Value);
                             break;
                     }
-                    //Svc.Log.Debug($"Failed to detect world initially, relying on fallback. World is now {world.Value.Name}");
+                    //Debug($"Failed to detect world initially, relying on fallback. World is now {world.Value.Name}");
                 }
                 if (world.HasValue)
                 {
-                    //Svc.Log.Verbose($"Detected world {world.Value.Name} and instance {instance} in {nameof(MapLinkPayload)} message: {message}");
+                    //Verbose($"Detected world {world.Value.Name} and instance {instance} in {nameof(MapLinkPayload)} message: {message}");
                     message.Payloads.AddRange([RelayLinkPayload, new IconPayload(BitmapFontIcon.NotoriousMonster), new RelayPayload(mlp, world.Value.RowId, instance, relayType, (uint)type).ToRawPayload(), RawPayload.LinkTerminator]);
                 }
                 else
-                    Svc.Log.Info($"Failed to detect world in {nameof(MapLinkPayload)} message: {message}");
+                    Information($"Failed to detect world in {nameof(MapLinkPayload)} message: {message}");
             }
         }
         catch (Exception ex)
         {
-            Svc.Log.Error($"{nameof(HuntRelayHelper)}.{nameof(OnChatMessage)} {ex}", ex);
+            Error($"{nameof(HuntRelayHelper)}.{nameof(OnChatMessage)} {ex}", ex);
         }
     }
 
     private void HandleRelayLink(uint _, SeString link)
     {
         var payload = link.Payloads.OfType<RawPayload>().Select(RelayPayload.Parse).FirstOrDefault(x => x != default);
-        if (payload == default) { Svc.Log.Error($"Failed to parse {nameof(RelayPayload)}"); return; }
+        if (payload == default) { Error($"Failed to parse {nameof(RelayPayload)}"); return; }
         if (Player.TerritoryIntendedUse is TerritoryIntendedUseEnum.Crystalline_Conflict or TerritoryIntendedUseEnum.Crystalline_Conflict_2 or TerritoryIntendedUseEnum.Deep_Dungeon)
         {
-            Svc.Log.Info($"Relay link ignored; Player in territory {Player.Territory} ({Player.TerritoryIntendedUse}) where chat is not permitted.");
+            Information($"Relay link ignored; Player in territory {Player.Territory} ({Player.TerritoryIntendedUse}) where chat is not permitted.");
             return;
         }
         var relay = BuildRelayMessage(payload.MapLink, payload.World, payload.Instance, payload.RelayType);

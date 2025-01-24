@@ -333,7 +333,7 @@ public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration
         {
             var slot = i - 1;
 
-            Svc.Log.Debug($"{slot}");
+            Debug($"{slot}");
             var values = stackalloc AtkValue[5];
             values[0] = new AtkValue()
             {
@@ -396,7 +396,7 @@ public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration
             };
 
             contextMenu->FireCallback(5, values, true);
-            Svc.Log.Debug($"Filled slot {i}");
+            Debug($"Filled slot {i}");
             SlotsFilled.Add(i);
             return true;
         }

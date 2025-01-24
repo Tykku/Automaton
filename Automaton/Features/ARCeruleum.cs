@@ -65,7 +65,7 @@ internal class ARCeruleum : Tweak
             AutoRetainer.RequestCharacterPostprocess();
         }
         else
-            Svc.Log.Info("Skipping post process turn in for character: inventory above threshold or not in workshop.");
+            Information("Skipping post process turn in for character: inventory above threshold or not in workshop.");
     }
 
     private unsafe void BuyTanks() => Service.Automation.Start(new BuyCeruleumTanks(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });

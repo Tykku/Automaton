@@ -252,7 +252,7 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
                     var medal = Yokai.FirstOrDefault(x => x.Minion == CurrentCompanion).Medal;
                     if (GetItemCount(medal) >= 10)
                     {
-                        Svc.Log.Debug("Have 10 of the relevant Legendary Medal. Swapping minions");
+                        Debug("Have 10 of the relevant Legendary Medal. Swapping minions");
                         var minion = Yokai.FirstOrDefault(x => CompanionUnlocked(x.Minion) && GetItemCount(x.Medal) < 10 && GetItemCount(x.Weapon) < 1).Minion;
                         if (Config.SwapMinions && minion != default)
                         {
@@ -264,7 +264,7 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
                     var zones = Yokai.FirstOrDefault(x => x.Minion == CurrentCompanion).Zones;
                     if (Config.SwapZones && !zones.Contains((Z)Svc.ClientState.TerritoryType))
                     {
-                        Svc.Log.Debug("Have Yokai minion equipped but not in appropiate zone. Teleporting");
+                        Debug("Have Yokai minion equipped but not in appropiate zone. Teleporting");
                         if (!Svc.Condition[ConditionFlag.Casting])
                             Telepo.Instance()->Teleport((uint)Coords.GetPrimaryAetheryte((uint)zones.First())!, 0);
                         return;
@@ -287,7 +287,7 @@ public class DateWithDestiny : Tweak<DateWithDestinyConfiguration>
             var nextFate = GetFates().FirstOrDefault();
             if ((Config.FullAuto || Config.PathToFate) && nextFate is not null && Svc.Condition[ConditionFlag.InFlight] && !Service.Navmesh.PathfindInProgress())
             {
-                Svc.Log.Debug("Finding path to fate");
+                Debug("Finding path to fate");
                 nextFateID = nextFate.FateId;
                 TargetPos = GetRandomPointInFate(nextFateID);
                 Service.Navmesh.PathfindAndMoveTo(TargetPos, true);

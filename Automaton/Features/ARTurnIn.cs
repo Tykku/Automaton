@@ -65,7 +65,7 @@ internal class ARTurnIn : Tweak<ARTurnInConfiguration>
     private void CheckCharacter()
     {
         if (Config.ExcludedCharacters.Any(x => x == Svc.ClientState.LocalContentId))
-            Svc.Log.Info("Skipping post process turn in for character: character excluded.");
+            Information("Skipping post process turn in for character: character excluded.");
         else
         {
             if (!P.UsingARPostProcess && Service.AutoRetainerIPC.GetInventoryFreeSlotCount() <= Config.InventoryFreeSlotThreshold)
@@ -74,7 +74,7 @@ internal class ARTurnIn : Tweak<ARTurnInConfiguration>
                 AutoRetainer.RequestCharacterPostprocess();
             }
             else
-                Svc.Log.Info("Skipping post process turn in for character: inventory above threshold.");
+                Information("Skipping post process turn in for character: inventory above threshold.");
         }
     }
 

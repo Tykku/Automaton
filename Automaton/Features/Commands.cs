@@ -87,13 +87,13 @@ public partial class Commands : Tweak<CommandsConfiguration>
         {
             if (AgentInventoryContext.Instance() == null)
             {
-                Svc.Log.Warning("AgentInventoryContext is null, cannot lower quality on items");
+                Warning("AgentInventoryContext is null, cannot lower quality on items");
                 return;
             }
             foreach (var i in Inventory.GetHQItems(Inventory.PlayerInventory))
             {
                 // TODO: this still sometimes can just cause a crash, idk why
-                Svc.Log.Info($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
+                Information($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
                 TaskManager.EnqueueDelay(250);
                 TaskManager.Enqueue(() => AgentInventoryContext.Instance() != null, "Checking if AgentInventoryContext is null");
                 TaskManager.Enqueue(() => !RaptureAtkModule.Instance()->AgentUpdateFlag.HasFlag(RaptureAtkModule.AgentUpdateFlags.InventoryUpdate), "checking for no inventory update");
@@ -105,7 +105,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             var item = Inventory.GetItemInInventory(itemId, Inventory.PlayerInventory, true);
             if (item != null)
             {
-                Svc.Log.Info($"Lowering quality on item [{item->ItemId}] {GetRow<Item>(item->ItemId)?.Name} in {item->Container} slot {item->Slot}");
+                Information($"Lowering quality on item [{item->ItemId}] {GetRow<Item>(item->ItemId)?.Name} in {item->Container} slot {item->Slot}");
                 AgentInventoryContext.Instance()->LowerItemQuality(item, item->Container, item->Slot, 0);
             }
         }

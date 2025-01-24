@@ -12,7 +12,10 @@ public abstract class CommonTasks : AutoTask
 
     protected async Task MoveTo(FlagMapMarker flag, float tolerance, bool mount = false, bool fly = false)
     {
-        var pof = Service.Navmesh.PointOnFloor(Coords.FlagToWorld(flag), false, 5) ?? Coords.FlagToWorld(flag);
+        Status = "Waiting for Navmesh";
+        await WaitWhile(() => Service.Navmesh.BuildProgress() >= 0, "BuildMesh");
+        ErrorIf(!Service.Navmesh.IsReady(), "Failed to build navmesh for the zone");
+        var pof = Service.Navmesh.PointOnFloor(Coords.FlagToWorld(flag), false, 5) ?? throw new Exception("Failed to find point on floor");
         await MoveTo(pof, tolerance, mount, fly);
     }
 
