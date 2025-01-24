@@ -173,4 +173,10 @@ public static class Enums
         Retrieve = 0x390001,
         Unk2 = 0x390002, // called in purify
     }
+
+    public enum LinkHandlerId : uint
+    {
+        RelayLinkPayload = 0,
+        BetterOutfitIndicator = 1,
+    }
 }

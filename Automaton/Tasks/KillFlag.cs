@@ -1,5 +1,4 @@
 ﻿using Dalamud.Game.ClientState.Objects.Types;
-using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
 
 namespace Automaton.Tasks;
@@ -7,12 +6,9 @@ public sealed class KillFlag : CommonTasks
 {
     protected override async Task Execute()
     {
-        Status = $"Teleporting to {GetRow<TerritoryType>(PlayerEx.MapFlag.TerritoryId)!.Value.PlaceName.Value.Name}";
         await TeleportTo(PlayerEx.MapFlag.TerritoryId, PlayerEx.MapFlag.ToVector3());
-        Status = "Mounting";
-        await Mount();
-        Status = "Moving To";
         await MoveTo(PlayerEx.MapFlag, 5, true, true);
+        using var stop = new OnDispose(() => Service.BossMod.ClearActive());
         await Kill();
     }
 
@@ -22,6 +18,7 @@ public sealed class KillFlag : CommonTasks
         {
             Svc.Targets.Target = target;
             Service.BossMod.SetActive("VBM Default");
+            Status = $"Waiting for {target.Name} to die";
             await TargetDead(target);
             Service.BossMod.ClearActive();
         }

@@ -69,13 +69,13 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
     public override void Enable()
     {
         Svc.Chat.CheckMessageHandled += OnChatMessage;
-        RelayLinkPayload = Svc.PluginInterface.AddChatLinkHandler(0, HandleRelayLink);
+        RelayLinkPayload = Svc.PluginInterface.AddChatLinkHandler((uint)LinkHandlerId.RelayLinkPayload, HandleRelayLink);
     }
 
     public override void Disable()
     {
         Svc.Chat.CheckMessageHandled -= OnChatMessage;
-        Svc.PluginInterface.RemoveChatLinkHandler(0);
+        Svc.PluginInterface.RemoveChatLinkHandler((uint)LinkHandlerId.RelayLinkPayload);
     }
 
     public enum Locality

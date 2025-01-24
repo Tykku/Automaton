@@ -5,7 +5,6 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using Lumina.Excel.Sheets;
-using GC = ECommons.ExcelServices.GrandCompany;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Automaton.Features;
@@ -25,6 +24,9 @@ public class CommandsConfiguration
 
     [BoolConfig(Label = "/item")]
     public bool EnableUseItem = false;
+
+    [BoolConfig(Label = "/killflag")]
+    public bool EnableKillFlag = false;
 }
 
 [Tweak]
@@ -123,7 +125,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
     #endregion
 
     #region Kill Flag
-    [CommandHandler("/killflag", "", nameof(Config.EnableTPFlag))]
+    [CommandHandler("/killflag", "Goes to flag, kills hunt mob at destination. Requires VBM.", nameof(Config.EnableKillFlag))]
     internal unsafe void OnCommandKillFlag(string command, string arguments) => Service.Automation.Start(new KillFlag());
     #endregion
 

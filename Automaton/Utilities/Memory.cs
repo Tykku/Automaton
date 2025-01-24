@@ -45,6 +45,7 @@ public unsafe class Memory
         internal const string ProcessSentChat = "E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??";
         internal const string RetrieveMateria = "E8 ?? ?? ?? ?? EB 27 48 8B 01"; // Client::UI::Agent::AgentMaterialize.ReceiveEvent	call    sub_140B209C0
         internal const string AgentMateriaAttachReceiveEvent = "E8 ?? ?? ?? ?? 84 C0 74 7E 48 8B CB"; // look around sub_1416B7280
+        internal const string CanDismount = "E8 ?? ?? ?? ?? F3 0F 10 74 24 ?? F3 0F 10 3D ?? ?? ?? ??"; // needs more testing, I don't think this actually is useful for dismount checking
     }
 
     internal unsafe delegate void RidePillionDelegate(BattleChara* target, int seatIndex);
@@ -465,6 +466,21 @@ public unsafe class Memory
             RetrieveMateria?.Invoke(EventFramework.Instance(), (int)eventId, _item->Container, _item->Slot, 0);
         }
         catch (Exception e) { e.Log(); }
+    }
+    #endregion
+
+    #region Can Dismount
+    public class DismountCheck : Hook
+    {
+        internal delegate byte CanDismountDelegate(nint a1, float* a2, Vector3* gameObjectPosition);
+        [EzHook(Signatures.CanDismount, false)]
+        internal readonly EzHook<CanDismountDelegate> CanDismountHook = null!;
+
+        private byte CanDismountDetour(nint a1, float* a2, Vector3* a3)
+        {
+            TryExecute(() => Svc.Log.Info($"{nameof(CanDismountDetour)}: [{a1} {*a2} {*a3}]"));
+            return CanDismountHook.Original(a1, a2, a3);
+        }
     }
     #endregion
 }
