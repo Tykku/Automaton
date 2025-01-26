@@ -44,6 +44,7 @@ public static class Coords
         return aetherytes.Count > 0 ? aetherytes.MinBy(a => (worldPos - AetherytePosition(a)).LengthSquared()).RowId : 0;
     }
 
+    public static Vector3 AetherytePosition(uint aetheryteId) => AetherytePosition(GetRow<Sheets.Aetheryte>(aetheryteId)!.Value);
     public static Vector3 AetherytePosition(Sheets.Aetheryte a)
     {
         // stolen from HTA, uses pixel coordinates
@@ -53,6 +54,13 @@ public static class Coords
         var marker = FindRow<MapMarker>(m => m.DataType == 3 && m.DataKey.RowId == a.RowId)
             ?? FindRow<MapMarker>(m => m.DataType == 4 && m.DataKey.RowId == a.AethernetName.RowId)!;
         return PixelCoordsToWorldCoords(marker.Value.X, marker.Value.Y, a.Territory.Value.Map.RowId);
+    }
+
+    public static bool IsTeleportingFaster(Vector3 dest)
+    {
+        var aetherytePos = AetherytePosition(FindClosestAetheryte(Player.Territory, dest, false));
+        Svc.Log.Info($"DistFromAetheryte: {(dest - aetherytePos).Length()}, DistFromPlayer: {(dest - Player.Position).Length()}");
+        return (dest - aetherytePos).Length() + 300 < (dest - Player.Position).Length(); // 300 is roughly the distance you can travel in the time it takes to teleport and remount
     }
 
     // if aetheryte is 'primary' (i.e. can be teleported to), return it; otherwise (i.e. aethernet shard) find and return primary aetheryte from same group

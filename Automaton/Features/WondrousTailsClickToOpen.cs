@@ -226,7 +226,7 @@ internal class WondrousTailsClickToOpen : Tweak
                     .OrderBy(row => row.SortKey)
                     .Select(m => m.TerritoryType.RowId)
                     .ToList();
-            // Trials Range, TODO: verify
+            // Trials Range
             case 7:
                 return _sheet
                     .Where(m => m.ContentType.RowId is 4)
@@ -234,7 +234,7 @@ internal class WondrousTailsClickToOpen : Tweak
                     .OrderBy(row => row.SortKey)
                     .Select(m => m.TerritoryType.RowId)
                     .ToList();
-            // Alliance Raid Range, TODO: verify
+            // Alliance Raid Range
             case 8:
                 return _sheet
                     .Where(m => m.ContentType.RowId is 5 && m.ContentMemberType.RowId is 4)
@@ -242,7 +242,7 @@ internal class WondrousTailsClickToOpen : Tweak
                     .OrderBy(row => row.SortKey)
                     .Select(m => m.TerritoryType.RowId)
                     .ToList();
-            // Normal Raid Range, TODO: verify
+            // Normal Raid Range
             case 9:
                 return _sheet
                     .Where(m => m.ContentType.RowId is 5 && m.ContentMemberType.RowId is 3)

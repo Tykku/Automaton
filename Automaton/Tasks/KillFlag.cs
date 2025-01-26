@@ -14,6 +14,7 @@ public sealed class KillFlag : CommonTasks
 
     private async Task Kill()
     {
+        // TODO: maybe order by rank then get first in case a B is next to an A or something
         if (Svc.Objects.FirstOrDefault(o => o is IBattleNpc mob && mob.IsHunt(), null) is { } target)
         {
             Svc.Targets.Target = target;

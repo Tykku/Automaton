@@ -25,6 +25,12 @@ public abstract class CommonTasks : AutoTask
         if (Player.DistanceTo(dest) < tolerance)
             return; // already in range
 
+        if (Coords.IsTeleportingFaster(dest))
+        {
+            Log("Teleporting faster");
+            await TeleportTo(Player.Territory, dest, allowSameZoneTeleport: true);
+        }
+
         if (mount || fly)
             await Mount();
 
@@ -51,10 +57,10 @@ public abstract class CommonTasks : AutoTask
         await WaitWhile(() => !(Player.DistanceTo(dest) < tolerance), "DirectNavigate");
     }
 
-    protected async Task TeleportTo(uint territoryId, Vector3 destination)
+    protected async Task TeleportTo(uint territoryId, Vector3 destination, bool allowSameZoneTeleport = false)
     {
         using var scope = BeginScope("Teleport");
-        if (Player.Territory == territoryId)
+        if (!allowSameZoneTeleport && Player.Territory == territoryId)
             return; // already in correct zone
 
         var closestAetheryteId = Coords.FindClosestAetheryte(territoryId, destination);
