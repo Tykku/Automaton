@@ -29,8 +29,8 @@ public static class Coords
         return (coord * factor - 1024f) / scale - offset * 0.001f;
     }
 
-    public static uint FindClosestAetheryte(FlagMapMarker flag, bool includeAethernet = true) => FindClosestAetheryte(flag.TerritoryId, FlagToWorld(flag));
-    public static uint FindClosestAetheryte(uint territoryTypeId, Vector3 worldPos, bool includeAethernet = true)
+    public static uint? FindClosestAetheryte(FlagMapMarker flag, bool includeAethernet = true) => FindClosestAetheryte(flag.TerritoryId, FlagToWorld(flag), includeAethernet);
+    public static uint? FindClosestAetheryte(uint territoryTypeId, Vector3 worldPos, bool includeAethernet = true)
     {
         if (territoryTypeId == 886)
         {
@@ -41,7 +41,7 @@ public static class Coords
         if (territoryTypeId == 478) // Hinterlands
             return 75; // Idyllshire
         List<Sheets.Aetheryte> aetherytes = [.. GetSheet<Sheets.Aetheryte>()?.Where(a => a.Territory.RowId == territoryTypeId && (includeAethernet || a.IsAetheryte))];
-        return aetherytes.Count > 0 ? aetherytes.MinBy(a => (worldPos - AetherytePosition(a)).LengthSquared()).RowId : 0;
+        return aetherytes.Count > 0 ? aetherytes.MinBy(a => (worldPos - AetherytePosition(a)).LengthSquared()).RowId : null;
     }
 
     public static Vector3 AetherytePosition(uint aetheryteId) => AetherytePosition(GetRow<Sheets.Aetheryte>(aetheryteId)!.Value);
@@ -58,7 +58,8 @@ public static class Coords
 
     public static bool IsTeleportingFaster(Vector3 dest)
     {
-        var aetherytePos = AetherytePosition(FindClosestAetheryte(Player.Territory, dest, false));
+        if (FindClosestAetheryte(Player.Territory, dest, false) is not { } aetheryteId) return false;
+        var aetherytePos = AetherytePosition(aetheryteId);
         Svc.Log.Info($"DistFromAetheryte: {(dest - aetherytePos).Length()}, DistFromPlayer: {(dest - Player.Position).Length()}");
         return (dest - aetherytePos).Length() + 300 < (dest - Player.Position).Length(); // 300 is roughly the distance you can travel in the time it takes to teleport and remount
     }

@@ -19,7 +19,7 @@ internal unsafe class TasksTab : DebugTab
         {
             var closest = Coords.FindClosestAetheryte(PlayerEx.MapFlag.TerritoryId, PlayerEx.MapFlag.ToVector3());
             ImGui.TextUnformatted($"{closest}");
-            ImGui.TextUnformatted($"{Coords.FindPrimaryAetheryte(closest)}");
+            ImGui.TextUnformatted($"{Coords.FindPrimaryAetheryte(closest ?? 0)}");
         }
 
         if (ImGui.Button($"dwd"))

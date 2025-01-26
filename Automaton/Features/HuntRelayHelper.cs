@@ -275,7 +275,7 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
                     // Hook PronounModule.Instance()->VirtualTable->ProcessString and decode the Utf8String to check the args here in case they change in the future
                     sb.BeginMacro(Lumina.Text.Payloads.MacroCode.Fixed)
                         .AppendIntExpression(200)
-                        .AppendIntExpression(3)
+                        .AppendIntExpression(3) // type of link (player, job, item, map, etc)
                         .AppendUIntExpression(MapLink.TerritoryType.RowId) // territory
                         .AppendUIntExpression(Instance is not null or 0 ? MapLink.Map.RowId | ((uint)Instance << 16) : MapLink.Map.RowId) // map or (map | (instance << 16))
                         .AppendIntExpression(MapLink.RawX) // x -> (int)(MathF.Round(posX, 3, MidpointRounding.AwayFromZero) * 1000)

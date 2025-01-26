@@ -63,7 +63,7 @@ public abstract class CommonTasks : AutoTask
         if (!allowSameZoneTeleport && Player.Territory == territoryId)
             return; // already in correct zone
 
-        var closestAetheryteId = Coords.FindClosestAetheryte(territoryId, destination);
+        var closestAetheryteId = Coords.FindClosestAetheryte(territoryId, destination) ?? 0;
         var teleportAetheryteId = Coords.FindPrimaryAetheryte(closestAetheryteId);
         ErrorIf(teleportAetheryteId == 0, $"Failed to find aetheryte in {territoryId}");
         var row = GetRow<Aetheryte>(teleportAetheryteId)!;
