@@ -63,7 +63,7 @@ public abstract class Tweak<T> : Tweak
 
             if (enabled)
                 foreach (var c in attr.Commands)
-                    EnableCommand(c, attr.HelpMessage, methodInfo, attr.Hooks);
+                    EnableCommand(c, attr.HelpMessage, methodInfo);
         }
     }
 
@@ -100,7 +100,7 @@ public abstract class Tweak<T> : Tweak
 
             if (enabled)
                 foreach (var c in attr.Commands)
-                    EnableCommand(c, attr.HelpMessage, methodInfo, attr.Hooks);
+                    EnableCommand(c, attr.HelpMessage, methodInfo);
             else
                 foreach (var c in attr.Commands)
                     DisableCommand(c);

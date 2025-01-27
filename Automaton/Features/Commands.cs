@@ -54,7 +54,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
     #endregion
 
     #region Desynth
-    [CommandHandler("/desynth", "Desynth an item by ID", nameof(Config.EnableDesynth), true)]
+    [CommandHandler("/desynth", "Desynth an item by ID", nameof(Config.EnableDesynth))]
     internal unsafe void OnCommmandDesynth(string command, string arguments)
     {
         if (!uint.TryParse(arguments, out var itemId)) return;
