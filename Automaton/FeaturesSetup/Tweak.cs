@@ -24,7 +24,7 @@ public abstract partial class Tweak : ITweak
 
         try
         {
-            EzSignatureHelper.Initialize(CachedType);
+            EzSignatureHelper.Initialize(this);
             Svc.Hook.InitializeFromAttributes(this);
         }
         catch (SignatureException ex)
@@ -110,7 +110,6 @@ public abstract partial class Tweak // Internal
 
     protected void CallHooks(string methodName)
     {
-        Debug($"Hooks: {Hooks.Count()}; EzHooks: {EzHooks.Count()}");
         foreach (var property in Hooks)
         {
             var hook = property.GetValue(this);
@@ -122,16 +121,13 @@ public abstract partial class Tweak // Internal
                 .Invoke(hook, null);
         }
 
-        if (methodName is "Enable" or "Disable")
+        if (methodName is "Enable" or "Disable") // EzHook doesn't have Dispose
         {
             foreach (var field in EzHooks)
             {
-                Debug($"Checking field: {field.Name} of type {field.FieldType?.FullName}");
-                var hook = field.GetValue(this);
-                Debug($"Calling hook: {hook?.GetType()?.Name}.{methodName}");
-                hook?.GetType()?.GetMethod(methodName)?.Invoke(hook, null);
+                if (field.GetValue(this) is { } hook)
+                    hook?.GetType()?.GetMethod(methodName)?.Invoke(hook, null);
             }
-
         }
     }
 
