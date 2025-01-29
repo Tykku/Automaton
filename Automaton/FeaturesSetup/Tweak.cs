@@ -1,5 +1,6 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
+using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using ECommons.Automation.NeoTaskManager;
 using ECommons.EzHookManager;
@@ -23,6 +24,7 @@ public abstract partial class Tweak : ITweak
 
         try
         {
+            EzSignatureHelper.Initialize(CachedType);
             Svc.Hook.InitializeFromAttributes(this);
         }
         catch (SignatureException ex)
@@ -99,22 +101,12 @@ public abstract partial class Tweak // Internal
         .GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
         .Where(prop =>
             prop.PropertyType.IsGenericType &&
-            prop.PropertyType.GetGenericTypeDefinition() == typeof(IHook<>)
+            prop.PropertyType.GetGenericTypeDefinition() == typeof(Hook<>)
         );
+
     protected IEnumerable<FieldInfo> EzHooks => CachedType
         .GetFields(ReflectionHelper.AllFlags)
         .Where(f => f.FieldType.IsGenericType && f.FieldType?.GetGenericTypeDefinition() == typeof(EzHook<>));
-    //protected IEnumerable<FieldInfo> EzHooks => CachedType
-    //.GetFields(ReflectionHelper.AllFlags)
-    //.Where(f =>
-    //{
-    //    //Debug($"Checking field: {f.Name} of type {f.FieldType?.FullName}");
-    //    var isGeneric = f.FieldType.IsGenericType;
-    //    var genericType = isGeneric ? f.FieldType.GetGenericTypeDefinition() : null;
-    //    var isEzHook = genericType == typeof(EzHook<>);
-    //    //Debug($"  IsGeneric: {isGeneric}, GenericType: {genericType?.FullName}, IsEzHook: {isEzHook}");
-    //    return isGeneric && isEzHook;
-    //});
 
     protected void CallHooks(string methodName)
     {
@@ -124,7 +116,7 @@ public abstract partial class Tweak // Internal
             var hook = property.GetValue(this);
             if (hook == null) continue;
 
-            typeof(IHook<>)
+            typeof(Hook<>)
                 .MakeGenericType(property.PropertyType.GetGenericArguments().First())
                 .GetMethod(methodName)?
                 .Invoke(hook, null);

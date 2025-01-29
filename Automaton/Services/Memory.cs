@@ -123,6 +123,11 @@ public unsafe class Memory
         }
     }
 
+    public class Hook
+    {
+        public Hook() => EzSignatureHelper.Initialize(this);
+    }
+
     public void Dispose() { }
 
     #region PacketDispatcher
@@ -512,3 +517,4 @@ public unsafe class Memory
     }
     #endregion
 }
+
