@@ -109,7 +109,7 @@ public abstract class Tweak<T> : Tweak
         base.OnConfigChangeInternal(fieldName);
     }
 
-    private void EnableCommand(string command, string helpMessage, MethodInfo methodInfo, bool hooks)
+    private void EnableCommand(string command, string helpMessage, MethodInfo methodInfo)
     {
         var handler = methodInfo.CreateDelegate<IReadOnlyCommandInfo.HandlerDelegate>(this);
 

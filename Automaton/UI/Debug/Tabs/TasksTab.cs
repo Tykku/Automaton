@@ -6,8 +6,6 @@ using ImGuiNET;
 namespace Automaton.UI.Debug.Tabs;
 internal unsafe class TasksTab : DebugTab
 {
-    private FateGrind fg = new(C.Tweaks.DateWithDestiny);
-
     public override void Draw()
     {
         using (ImRaii.Disabled(!Service.Automation.Running))
@@ -24,13 +22,13 @@ internal unsafe class TasksTab : DebugTab
 
         if (ImGui.Button($"dwd"))
         {
-            Service.Automation.Start(fg);
+            Service.Automation.Start(new FateGrind(C.Tweaks.DateWithDestiny));
         }
 
-        ImGui.TextUnformatted($"Fate Count: {fg.AvailableFates.Count()}");
-        foreach (var fate in fg.AvailableFates)
-        {
-            ImGui.TextUnformatted($"{fate.Stringify()}");
-        }
+        //ImGui.TextUnformatted($"Fate Count: {fg.AvailableFates.Count()}");
+        //foreach (var fate in fg.AvailableFates)
+        //{
+        //    ImGui.TextUnformatted($"{fate.Stringify()}");
+        //}
     }
 }

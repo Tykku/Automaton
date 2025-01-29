@@ -1,7 +1,7 @@
 ﻿using System.Threading;
 using System.Threading.Tasks;
 
-namespace Automaton.Tasks;
+namespace Automaton.Services;
 
 // base class for automation tasks
 // all tasks are cancellable, and all continuations are executed on the main thread (in framework update)
@@ -147,8 +147,8 @@ public sealed class Automation : IDisposable
         CurrentTask = task;
         task.Run(() =>
         {
-            if (CurrentTask == task)
-                CurrentTask = null;
+            //if (CurrentTask == task)
+            CurrentTask = null;
             // else: some other task is now executing
         }, OnCompleted);
     }

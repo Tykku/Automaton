@@ -1,5 +1,6 @@
 ﻿using Automaton.Features;
 using Dalamud.Game.ClientState.Fates;
+using ECommons.Automation;
 using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -32,8 +33,13 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
     {
         while (true)
         {
+            //if (Svc.Condition[ConditionFlag.Unconscious])
+            //    await Resurrect();
+
             if (Svc.Condition[ConditionFlag.InCombat])
             {
+                if (ShouldLevelSyncCheese())
+                    await LevelSyncCheese();
                 Status = "Waiting for combat to end";
                 await NextFrame(30);
             }
@@ -51,6 +57,8 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
             else
             {
                 FateID = 0;
+                // don't clear preset immediately in case we're still in combat after fate ends
+                await WaitWhile(() => Player.IsBusy, "WaitingForNotBusy");
                 Service.BossMod.ClearActive();
             }
 
@@ -61,6 +69,7 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
                 {
                     nextFateId = nextFate.FateId;
                     TargetPos = GetRandomPointInFate(nextFateId);
+                    await WaitWhile(() => Player.IsBusy, "WaitingForNotBusy");
                     await MoveTo(TargetPos, 5, true, true);
                 }
             }
@@ -77,12 +86,34 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
         }
     }
 
+    private async Task LevelSyncCheese()
+    {
+        Status = "About to die. Abusing level sync";
+        SyncFate(FateID, true);
+        await NextFrame(60 * 10);
+        SyncFate(FateID);
+    }
+
     private async Task SwapZones()
     {
         // if we're achievement farming, find the next zone where the achievement isn't completed, otherwise, pick a random zone within the same expac
         // if we're yokai farming, find the next zone where the yokai isn't completed
         var zoneId = GetNextAchievementZone() is { } zone ? zone : GetRandomSameExpacZone();
         await TeleportTo(zoneId, default);
+    }
+
+    private async Task Resurrect()
+    {
+        Status = "Reviving";
+        Service.Memory.ExecuteCommand?.Invoke((int)ExecuteCommandFlag.Revive);
+        await WaitWhile(() => Player.Territory != Player.HomeAetheryteTerritory || Player.IsBusy, "WaitingForRevive");
+    }
+
+    private unsafe bool ShouldLevelSyncCheese()
+    {
+        if (Player.IsLevelSynced && Player.SyncedLevel != Player.UnsyncedLevel)
+            if (Player.Character->Health / Player.Character->MaxHealth < 0.15f) return true;
+        return false;
     }
 
     private unsafe uint? GetNextAchievementZone()
@@ -129,12 +160,14 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
         return (Vector3)(point == null ? fate->Location : point);
     }
 
-    private unsafe void SyncFate(ushort value)
+    private unsafe void SyncFate(ushort value, bool unsync = false)
     {
-        if (value != 0 && PlayerState.Instance()->IsLevelSynced == 0)
+        if (value != 0 && !Player.IsLevelSynced)
         {
             if (Player.Level > fateMaxLevel)
-                ECommons.Automation.Chat.Instance.SendMessage("/lsync");
+                Chat.Instance.SendMessage("/lsync");
         }
+        if (unsync && Player.IsLevelSynced)
+            Chat.Instance.SendMessage("/lsync");
     }
 }

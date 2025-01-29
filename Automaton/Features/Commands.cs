@@ -72,7 +72,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             return;
         }
 
-        Service.Memory.SalvageItem(AgentSalvage.Instance(), item, 0, 0);
+        Service.Memory.SalvageItem?.Invoke(AgentSalvage.Instance(), item, 0, 0);
         var retval = new AtkValue();
         Span<AtkValue> param = [
             new AtkValue { Type = ValueType.Int, Int = 0 },
@@ -97,7 +97,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             foreach (var i in Inventory.GetHQItems(Inventory.PlayerInventory))
             {
                 // TODO: this still sometimes can just cause a crash, idk why
-                Information($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
+                Log($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
                 TaskManager.EnqueueDelay(250);
                 TaskManager.Enqueue(() => AgentInventoryContext.Instance() != null, "Checking if AgentInventoryContext is null");
                 TaskManager.Enqueue(() => !RaptureAtkModule.Instance()->AgentUpdateFlag.HasFlag(RaptureAtkModule.AgentUpdateFlags.InventoryUpdate), "checking for no inventory update");
@@ -109,7 +109,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             var item = Inventory.GetItemInInventory(itemId, Inventory.PlayerInventory, true);
             if (item != null)
             {
-                Information($"Lowering quality on item [{item->ItemId}] {GetRow<Item>(item->ItemId)?.Name} in {item->Container} slot {item->Slot}");
+                Log($"Lowering quality on item [{item->ItemId}] {GetRow<Item>(item->ItemId)?.Name} in {item->Container} slot {item->Slot}");
                 AgentInventoryContext.Instance()->LowerItemQuality(item, item->Container, item->Slot, 0);
             }
         }

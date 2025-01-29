@@ -1,5 +1,4 @@
-﻿using Automaton.Tasks;
-using ECommons.Automation.NeoTaskManager;
+﻿using ECommons.Automation.NeoTaskManager;
 
 namespace Automaton.Services;
 public class Service
@@ -16,4 +15,6 @@ public class Service
     public static Automation Automation { get; private set; } = null!;
     public static Memory Memory { get; private set; } = null!;
     public static TaskManager TaskManager { get; private set; } = null!;
+
+    public static uint LastZone;
 }

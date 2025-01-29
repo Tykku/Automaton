@@ -1,8 +1,9 @@
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
-using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using ECommons.Automation.NeoTaskManager;
+using ECommons.EzHookManager;
+using ECommons.Reflection;
 using System.Reflection;
 
 namespace Automaton.FeaturesSetup;
@@ -98,20 +99,75 @@ public abstract partial class Tweak // Internal
         .GetProperties(BindingFlags.NonPublic | BindingFlags.Instance)
         .Where(prop =>
             prop.PropertyType.IsGenericType &&
-            prop.PropertyType.GetGenericTypeDefinition() == typeof(Hook<>)
+            prop.PropertyType.GetGenericTypeDefinition() == typeof(IHook<>)
         );
+    protected IEnumerable<FieldInfo> EzHooks => CachedType
+        .GetFields(ReflectionHelper.AllFlags)
+        .Where(f => f.FieldType.IsGenericType && f.FieldType?.GetGenericTypeDefinition() == typeof(EzHook<>));
+    //protected IEnumerable<FieldInfo> EzHooks => CachedType
+    //.GetFields(ReflectionHelper.AllFlags)
+    //.Where(f =>
+    //{
+    //    //Debug($"Checking field: {f.Name} of type {f.FieldType?.FullName}");
+    //    var isGeneric = f.FieldType.IsGenericType;
+    //    var genericType = isGeneric ? f.FieldType.GetGenericTypeDefinition() : null;
+    //    var isEzHook = genericType == typeof(EzHook<>);
+    //    //Debug($"  IsGeneric: {isGeneric}, GenericType: {genericType?.FullName}, IsEzHook: {isEzHook}");
+    //    return isGeneric && isEzHook;
+    //});
 
     protected void CallHooks(string methodName)
     {
+        Debug($"Hooks: {Hooks.Count()}; EzHooks: {EzHooks.Count()}");
         foreach (var property in Hooks)
         {
             var hook = property.GetValue(this);
             if (hook == null) continue;
 
-            typeof(Hook<>)
+            typeof(IHook<>)
                 .MakeGenericType(property.PropertyType.GetGenericArguments().First())
                 .GetMethod(methodName)?
                 .Invoke(hook, null);
+        }
+
+        if (methodName is "Enable" or "Disable")
+        {
+            foreach (var field in EzHooks)
+            {
+                Debug($"Checking field: {field.Name} of type {field.FieldType?.FullName}");
+
+                // Get the EzHookAttribute
+                var attr = field.GetCustomAttribute<EzHookAttribute>();
+                if (attr == null) continue;
+
+                // Get the detour method name from the field name (assuming convention)
+                var detourMethodName = $"{field.Name}Detour";
+                var detourMethod = CachedType.GetMethod(detourMethodName,
+                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
+
+                if (detourMethod == null)
+                {
+                    Debug($"Could not find detour method {detourMethodName}");
+                    continue;
+                }
+
+                // Create the hook if it doesn't exist
+                var hook = field.GetValue(this);
+                if (hook == null)
+                {
+                    var delegateType = field.FieldType.GetGenericArguments()[0];
+                    var constructor = field.FieldType.GetConstructor([typeof(string), delegateType, typeof(bool)]);
+
+                    var del = Delegate.CreateDelegate(delegateType, this, detourMethod);
+                    hook = constructor?.Invoke([attr.Signature, del, attr.AutoEnable]);
+
+                    // Set the field value
+                    field.SetValue(this, hook);
+                }
+
+                Debug($"Calling {methodName} on hook");
+                hook?.GetType()?.GetMethod(methodName)?.Invoke(hook, null);
+            }
         }
     }
 
@@ -252,47 +308,47 @@ public abstract partial class Tweak // Internal
 
 public abstract partial class Tweak // Logging
 {
-    public void Log(string messageTemplate, params object[] values)
-        => Information(messageTemplate, values);
+    public void Log(string messageTemplate)
+        => Information(messageTemplate);
 
-    public void Log(Exception exception, string messageTemplate, params object[] values)
-        => Information(exception, messageTemplate, values);
+    public void Log(Exception exception, string messageTemplate)
+        => Information(exception, messageTemplate);
 
-    public void Verbose(string messageTemplate, params object[] values)
-        => Svc.Log.Verbose($"[{InternalName}] {messageTemplate}", values);
+    public void Verbose(string messageTemplate)
+        => PluginLog.Verbose($"[{InternalName}] {messageTemplate}");
 
-    public void Verbose(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Verbose(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Verbose(Exception exception, string messageTemplate)
+        => exception.LogVerbose($"[{InternalName}] {messageTemplate}");
 
-    public void Debug(string messageTemplate, params object[] values)
-        => Svc.Log.Debug($"[{InternalName}] {messageTemplate}", values);
+    public void Debug(string messageTemplate)
+        => PluginLog.Debug($"[{InternalName}] {messageTemplate}");
 
-    public void Debug(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Debug(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Debug(Exception exception, string messageTemplate)
+        => exception.LogDebug($"[{InternalName}] {messageTemplate}");
 
-    public void Information(string messageTemplate, params object[] values)
-        => Svc.Log.Information($"[{InternalName}] {messageTemplate}", values);
+    public void Information(string messageTemplate)
+        => PluginLog.Information($"[{InternalName}] {messageTemplate}");
 
-    public void Information(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Information(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Information(Exception exception, string messageTemplate)
+        => exception.LogInfo($"[{InternalName}] {messageTemplate}");
 
-    public void Warning(string messageTemplate, params object[] values)
-        => Svc.Log.Warning($"[{InternalName}] {messageTemplate}", values);
+    public void Warning(string messageTemplate)
+        => PluginLog.Warning($"[{InternalName}] {messageTemplate}");
 
-    public void Warning(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Warning(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Warning(Exception exception, string messageTemplate)
+        => exception.LogWarning($"[{InternalName}] {messageTemplate}");
 
-    public void Error(string messageTemplate, params object[] values)
-        => Svc.Log.Error($"[{InternalName}] {messageTemplate}", values);
+    public void Error(string messageTemplate)
+        => PluginLog.Error($"[{InternalName}] {messageTemplate}");
 
-    public void Error(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Error(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Error(Exception exception, string messageTemplate)
+        => exception.Log($"[{InternalName}] {messageTemplate}");
 
-    public void Fatal(string messageTemplate, params object[] values)
-        => Svc.Log.Fatal($"[{InternalName}] {messageTemplate}", values);
+    public void Fatal(string messageTemplate)
+        => PluginLog.Fatal($"[{InternalName}] {messageTemplate}");
 
-    public void Fatal(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Fatal(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Fatal(Exception exception, string messageTemplate)
+        => exception.LogFatal($"[{InternalName}] {messageTemplate}");
 
     public void ModuleMessage(SeString messageTemplate) => ModuleMessage(messageTemplate.TextValue);
     public void ModuleMessage(string messageTemplate)

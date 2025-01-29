@@ -46,7 +46,7 @@ public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
     {
         if (id == AchievementId)
         {
-            Information($"setting loop count to {max - current}");
+            Log($"setting loop count to {max - current}");
             Config.NumberOfLoops = (int)(max - current);
         }
     }

@@ -52,6 +52,7 @@ public class Plugin : IDalamudPlugin
         Svc.Framework.RunOnFrameworkThread(InitializeTweaks);
         C.EnabledTweaks.CollectionChanged += OnChange;
         _ = new EzFrameworkUpdate(EventWatcher);
+        _ = new EzTerritoryChanged((zone) => Service.LastZone = zone);
     }
 
     private bool inpvp = false;

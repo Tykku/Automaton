@@ -192,7 +192,7 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
                 var (world, instance, relayType) = DetectWorldInstanceRelayType(message);
                 if ((RelayTypes)relayType == RelayTypes.None)
                 {
-                    Information($"Failed to detect relay type in {nameof(MapLinkPayload)} message: {message}");
+                    Log($"Failed to detect relay type in {nameof(MapLinkPayload)} message: {message}");
                     return;
                 }
                 if (world == null && Config.AssumeBlankWorldsAreLocal)
@@ -219,12 +219,12 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
                     message.Payloads.AddRange([RelayLinkPayload, new IconPayload(BitmapFontIcon.NotoriousMonster), new RelayPayload(mlp, world.Value.RowId, instance, relayType, (uint)type).ToRawPayload(), RawPayload.LinkTerminator]);
                 }
                 else
-                    Information($"Failed to detect world in {nameof(MapLinkPayload)} message: {message}");
+                    Log($"Failed to detect world in {nameof(MapLinkPayload)} message: {message}");
             }
         }
         catch (Exception ex)
         {
-            Error($"{nameof(HuntRelayHelper)}.{nameof(OnChatMessage)} {ex}", ex);
+            Error(ex, $"[{nameof(OnChatMessage)}] Unexpected error");
         }
     }
 
@@ -234,7 +234,7 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
         if (payload == default) { Error($"Failed to parse {nameof(RelayPayload)}"); return; }
         if (Player.TerritoryIntendedUse is TerritoryIntendedUseEnum.Crystalline_Conflict or TerritoryIntendedUseEnum.Crystalline_Conflict_2 or TerritoryIntendedUseEnum.Deep_Dungeon)
         {
-            Information($"Relay link ignored; Player in territory {Player.Territory} ({Player.TerritoryIntendedUse}) where chat is not permitted.");
+            Log($"Relay link ignored; Player in territory {Player.Territory} ({Player.TerritoryIntendedUse}) where chat is not permitted.");
             return;
         }
         var relay = BuildRelayMessage(payload.MapLink, payload.World, payload.Instance, payload.RelayType);
