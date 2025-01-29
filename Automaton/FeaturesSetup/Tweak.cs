@@ -127,39 +127,11 @@ public abstract partial class Tweak // Internal
             foreach (var field in EzHooks)
             {
                 Debug($"Checking field: {field.Name} of type {field.FieldType?.FullName}");
-
-                // Get the EzHookAttribute
-                var attr = field.GetCustomAttribute<EzHookAttribute>();
-                if (attr == null) continue;
-
-                // Get the detour method name from the field name (assuming convention)
-                var detourMethodName = $"{field.Name}Detour";
-                var detourMethod = CachedType.GetMethod(detourMethodName,
-                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Instance);
-
-                if (detourMethod == null)
-                {
-                    Debug($"Could not find detour method {detourMethodName}");
-                    continue;
-                }
-
-                // Create the hook if it doesn't exist
                 var hook = field.GetValue(this);
-                if (hook == null)
-                {
-                    var delegateType = field.FieldType.GetGenericArguments()[0];
-                    var constructor = field.FieldType.GetConstructor([typeof(string), delegateType, typeof(bool)]);
-
-                    var del = Delegate.CreateDelegate(delegateType, this, detourMethod);
-                    hook = constructor?.Invoke([attr.Signature, del, attr.AutoEnable]);
-
-                    // Set the field value
-                    field.SetValue(this, hook);
-                }
-
-                Debug($"Calling {methodName} on hook");
+                Debug($"Calling hook: {hook?.GetType()?.Name}.{methodName}");
                 hook?.GetType()?.GetMethod(methodName)?.Invoke(hook, null);
             }
+
         }
     }
 
