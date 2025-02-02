@@ -1,7 +1,7 @@
 ﻿using ECommons.EzIpcManager;
 
 namespace Automaton.IPC;
-internal class Provider
+public class Provider
 {
     public Provider() => EzIPC.Init(this);
 

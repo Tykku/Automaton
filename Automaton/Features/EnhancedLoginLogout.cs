@@ -1,5 +1,4 @@
-﻿using Automaton.IPC;
-using Dalamud.Interface;
+﻿using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using ECommons.Automation;
 using ECommons.Events;
@@ -82,7 +81,7 @@ public class EnhancedLoginLogout : Tweak<EnhancedLoginLogoutConfig>
     private string ConvertToCommand(string cmd) => cmd.StartsWith('/') ? cmd : $"/{cmd}";
     private void RunCommands()
     {
-        if (AutoRetainerIPC.Installed && !Config.RunCommandsWhenARIsActive && (P.AutoRetainer.IsBusy() || P.AutoRetainer.GetMultiModeEnabled())) return;
+        if (AutoRetainerIPC.Installed && !Config.RunCommandsWhenARIsActive && (Service.AutoRetainerIPC.IsBusy() || Service.AutoRetainerIPC.GetMultiModeEnabled())) return;
         foreach (var chr in Config.Chars.Where(x => x.CID == 0 || x.CID == Player.CID).OrderByDescending(x => x.Name == "Global"))
             foreach (var cmd in chr.LoginCommands.Where(c => c.Length >= 3))
             {

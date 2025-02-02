@@ -1,13 +1,11 @@
 using Automaton.Configuration;
-using Automaton.IPC;
-using Automaton.Tasks;
 using Automaton.UI;
-using AutoRetainerAPI;
 using Dalamud.Plugin;
 using ECommons;
-using ECommons.Automation.LegacyTaskManager;
 using ECommons.Configuration;
+using ECommons.EzEventManager;
 using ECommons.SimpleGui;
+using ECommons.Singletons;
 using System.Collections.Specialized;
 using System.Reflection;
 
@@ -19,31 +17,17 @@ public class Plugin : IDalamudPlugin
     public static string VersionString => $"v{P.GetType().Assembly.GetName().Version?.Major}.{P.GetType().Assembly.GetName().Version?.Minor}";
     private const string Command = "/cbt";
     private const string LegacyCommand = "/automaton";
-
-    internal static Plugin P = null!;
-    private readonly Config Config;
+    public static Plugin P { get; private set; } = null!;
     public static Config C => P.Config;
+    private readonly Config Config;
 
     public static readonly HashSet<Tweak> Tweaks = [];
-    internal TaskManager TaskManager;
-    internal AddonObserver AddonObserver;
-    internal Automation Automation;
-
-    internal Provider Provider;
-    internal NavmeshIPC Navmesh;
-    internal AutoRetainerApi AutoRetainerAPI;
-    internal LifestreamIPC Lifestream;
-    internal DeliverooIPC Deliveroo;
-    internal AutoRetainerIPC AutoRetainer;
     internal bool UsingARPostProcess;
-
-    internal Memory Memory = null!;
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         P = this;
         ECommonsMain.Init(pluginInterface, P, ECommons.Module.DalamudReflector, ECommons.Module.ObjectFunctions);
-
         EzConfig.DefaultSerializationFactory = new YamlFactory();
         Config = EzConfig.Init<Config>();
 
@@ -58,37 +42,21 @@ public class Plugin : IDalamudPlugin
             }
         }
 
-        Svc.Framework.Update += EventWatcher;
-
         EzCmd.Add(Command, OnCommand, $"Opens the {Name} menu");
         EzCmd.Add(LegacyCommand, OnCommand);
         EzConfigGui.Init(new HaselWindow().Draw, nameOverride: $"{Name} {VersionString}");
         EzConfigGui.WindowSystem.AddWindow(new DebugWindow());
-        try
-        {
-            Memory = new();
-        }
-        catch (Exception ex)
-        {
-            Svc.Log.Error(ex, "Failed to initialize Memory");
-        }
 
-        AddonObserver = new();
-        TaskManager = new();
-        Automation = new();
-        Provider = new();
-        Navmesh = new();
-        AutoRetainerAPI = new();
-        Lifestream = new();
-        Deliveroo = new();
-        AutoRetainer = new();
+        SingletonServiceManager.Initialize(typeof(Service));
 
         Svc.Framework.RunOnFrameworkThread(InitializeTweaks);
         C.EnabledTweaks.CollectionChanged += OnChange;
+        _ = new EzFrameworkUpdate(EventWatcher);
+        _ = new EzTerritoryChanged((zone) => Service.LastZone = zone);
     }
 
     private bool inpvp = false;
-    private void EventWatcher(IFramework framework)
+    private void EventWatcher()
     {
         if (PlayerEx.InPvP)
         {
@@ -121,11 +89,7 @@ public class Plugin : IDalamudPlugin
             Svc.Log.Debug($"Disposing {tweak.InternalName}");
             TryExecute(tweak.DisposeInternal);
         }
-        Svc.Framework.Update -= EventWatcher;
         C.EnabledTweaks.CollectionChanged -= OnChange;
-        AddonObserver.Dispose();
-        Automation.Dispose();
-        Memory?.Dispose();
         ECommonsMain.Dispose();
     }
 
@@ -156,8 +120,8 @@ public class Plugin : IDalamudPlugin
                         C.EnabledTweaks.Add(@params[0]);
                     break;
                 case "stop":
-                    P.Automation.Stop();
-                    P.TaskManager.Abort();
+                    Service.Automation.Stop();
+                    Service.TaskManager.Abort();
                     break;
             }
         }
@@ -190,4 +154,3 @@ public class Plugin : IDalamudPlugin
         }
     }
 }
-

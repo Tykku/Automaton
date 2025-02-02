@@ -1,17 +1,16 @@
-using Automaton.IPC;
-using AutoRetainerAPI;
 using Dalamud.Game.Text;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Hooking;
 using Dalamud.Utility.Signatures;
 using ECommons.Automation.NeoTaskManager;
+using ECommons.EzHookManager;
+using ECommons.Reflection;
 using System.Reflection;
 
 namespace Automaton.FeaturesSetup;
 
 public abstract partial class Tweak : ITweak
 {
-    // https://github.com/Haselnussbomber/HaselTweaks
     public Tweak()
     {
         CachedType = GetType();
@@ -20,15 +19,12 @@ public abstract partial class Tweak : ITweak
         Requirements = CachedType.GetCustomAttributes<RequirementAttribute>().ToArray();
         Outdated = CachedType.GetCustomAttribute<TweakAttribute>()?.Outdated ?? false;
         Disabled = CachedType.GetCustomAttribute<TweakAttribute>()?.Disabled ?? false;
+        DisabledReason = CachedType.GetCustomAttribute<TweakAttribute>()?.DisabledReason;
         IsDebug = CachedType.GetCustomAttribute<TweakAttribute>()?.Debug ?? false;
-
-        TaskManager = new();
-
-        if (Requirements.Any(r => r.InternalName == AutoRetainerIPC.Name))
-            AutoRetainer = new(Name);
 
         try
         {
+            EzSignatureHelper.Initialize(this);
             Svc.Hook.InitializeFromAttributes(this);
         }
         catch (SignatureException ex)
@@ -61,6 +57,10 @@ public abstract partial class Tweak : ITweak
             return;
         }
 
+        if (Requirements.Any(r => r.InternalName == AutoRetainerIPC.Name))
+            AutoRetainer = new(Name);
+
+        TaskManager = new();
         Ready = true;
     }
 
@@ -77,6 +77,7 @@ public abstract partial class Tweak : ITweak
     public bool Ready { get; protected set; }
     public bool Enabled { get; protected set; }
     public bool Disabled { get; protected set; }
+    public string? DisabledReason { get; protected set; }
 
     protected TaskManager TaskManager = null!;
     protected AutoRetainerApi AutoRetainer = null!;
@@ -103,6 +104,10 @@ public abstract partial class Tweak // Internal
             prop.PropertyType.GetGenericTypeDefinition() == typeof(Hook<>)
         );
 
+    protected IEnumerable<FieldInfo> EzHooks => CachedType
+        .GetFields(ReflectionHelper.AllFlags)
+        .Where(f => f.FieldType.IsGenericType && f.FieldType?.GetGenericTypeDefinition() == typeof(EzHook<>));
+
     protected void CallHooks(string methodName)
     {
         foreach (var property in Hooks)
@@ -114,6 +119,15 @@ public abstract partial class Tweak // Internal
                 .MakeGenericType(property.PropertyType.GetGenericArguments().First())
                 .GetMethod(methodName)?
                 .Invoke(hook, null);
+        }
+
+        if (methodName is "Enable" or "Disable") // EzHook doesn't have Dispose
+        {
+            foreach (var field in EzHooks)
+            {
+                if (field.GetValue(this) is { } hook)
+                    hook?.GetType()?.GetMethod(methodName)?.Invoke(hook, null);
+            }
         }
     }
 
@@ -254,47 +268,47 @@ public abstract partial class Tweak // Internal
 
 public abstract partial class Tweak // Logging
 {
-    public void Log(string messageTemplate, params object[] values)
-        => Information(messageTemplate, values);
+    public void Log(string messageTemplate)
+        => Information(messageTemplate);
 
-    public void Log(Exception exception, string messageTemplate, params object[] values)
-        => Information(exception, messageTemplate, values);
+    public void Log(Exception exception, string messageTemplate)
+        => Information(exception, messageTemplate);
 
-    public void Verbose(string messageTemplate, params object[] values)
-        => Svc.Log.Verbose($"[{InternalName}] {messageTemplate}", values);
+    public void Verbose(string messageTemplate)
+        => PluginLog.Verbose($"[{InternalName}] {messageTemplate}");
 
-    public void Verbose(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Verbose(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Verbose(Exception exception, string messageTemplate)
+        => exception.LogVerbose($"[{InternalName}] {messageTemplate}");
 
-    public void Debug(string messageTemplate, params object[] values)
-        => Svc.Log.Debug($"[{InternalName}] {messageTemplate}", values);
+    public void Debug(string messageTemplate)
+        => PluginLog.Debug($"[{InternalName}] {messageTemplate}");
 
-    public void Debug(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Debug(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Debug(Exception exception, string messageTemplate)
+        => exception.LogDebug($"[{InternalName}] {messageTemplate}");
 
-    public void Information(string messageTemplate, params object[] values)
-        => Svc.Log.Information($"[{InternalName}] {messageTemplate}", values);
+    public void Information(string messageTemplate)
+        => PluginLog.Information($"[{InternalName}] {messageTemplate}");
 
-    public void Information(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Information(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Information(Exception exception, string messageTemplate)
+        => exception.LogInfo($"[{InternalName}] {messageTemplate}");
 
-    public void Warning(string messageTemplate, params object[] values)
-        => Svc.Log.Warning($"[{InternalName}] {messageTemplate}", values);
+    public void Warning(string messageTemplate)
+        => PluginLog.Warning($"[{InternalName}] {messageTemplate}");
 
-    public void Warning(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Warning(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Warning(Exception exception, string messageTemplate)
+        => exception.LogWarning($"[{InternalName}] {messageTemplate}");
 
-    public void Error(string messageTemplate, params object[] values)
-        => Svc.Log.Error($"[{InternalName}] {messageTemplate}", values);
+    public void Error(string messageTemplate)
+        => PluginLog.Error($"[{InternalName}] {messageTemplate}");
 
-    public void Error(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Error(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Error(Exception exception, string messageTemplate)
+        => exception.Log($"[{InternalName}] {messageTemplate}");
 
-    public void Fatal(string messageTemplate, params object[] values)
-        => Svc.Log.Fatal($"[{InternalName}] {messageTemplate}", values);
+    public void Fatal(string messageTemplate)
+        => PluginLog.Fatal($"[{InternalName}] {messageTemplate}");
 
-    public void Fatal(Exception exception, string messageTemplate, params object[] values)
-        => Svc.Log.Fatal(exception, $"[{InternalName}] {messageTemplate}", values);
+    public void Fatal(Exception exception, string messageTemplate)
+        => exception.LogFatal($"[{InternalName}] {messageTemplate}");
 
     public void ModuleMessage(SeString messageTemplate) => ModuleMessage(messageTemplate.TextValue);
     public void ModuleMessage(string messageTemplate)

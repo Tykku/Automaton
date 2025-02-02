@@ -1,4 +1,3 @@
-using Automaton.IPC;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using Dalamud.Interface.Textures.TextureWraps;
@@ -11,6 +10,7 @@ using ImGuiNET;
 using System.ComponentModel;
 using System.Reflection;
 using System.Threading.Tasks;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Automaton.Utilities;
 public static class ImGuiX
@@ -232,5 +232,11 @@ public static class ImGuiX
         return res;
     }
 
-    public static void TaskState() => ImGui.TextUnformatted($"State: {P.Automation.CurrentTask?.Status ?? "Idle"}");
+    public static void TaskState() => ImGui.TextUnformatted($"State: {Service.Automation.CurrentTask?.Status ?? "Idle"}");
+
+    public static void DrawTableColumn(string name)
+    {
+        ImGui.TableNextColumn();
+        ImGui.TextUnformatted(name);
+    }
 }

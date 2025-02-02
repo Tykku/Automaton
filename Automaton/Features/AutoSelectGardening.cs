@@ -25,7 +25,7 @@ public class AutoSelectGardeningConfiguration
     public bool OnlyShowInventoryItems = false;
 }
 
-[Tweak]
+[Tweak(outdated: true, disabledReason: "Pandora's Box now has the fallback feature that this had.")]
 public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration>
 {
     public override string Name => "Auto-select Gardening Soil/Seeds";
@@ -154,7 +154,7 @@ public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration
                 if (addon->AtkValuesCount <= 5) return;
                 var fertilizeText = addon->AtkValues[5];
                 var text = MemoryHelper.ReadSeStringNullTerminated(new nint(fertilizeText.String));
-                if (text.ExtractText() == AddonText[6417].Text.ExtractText())
+                if (text.GetText() == AddonText[6417].Text.ExtractText())
                 {
                     var im = InventoryManager.Instance();
                     var inv1 = im->GetInventoryContainer(InventoryType.Inventory1);
@@ -333,7 +333,7 @@ public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration
         {
             var slot = i - 1;
 
-            Svc.Log.Debug($"{slot}");
+            Debug($"{slot}");
             var values = stackalloc AtkValue[5];
             values[0] = new AtkValue()
             {
@@ -396,7 +396,7 @@ public unsafe class AutoSelectGardening : Tweak<AutoSelectGardeningConfiguration
             };
 
             contextMenu->FireCallback(5, values, true);
-            Svc.Log.Debug($"Filled slot {i}");
+            Debug($"Filled slot {i}");
             SlotsFilled.Add(i);
             return true;
         }

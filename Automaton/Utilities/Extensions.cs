@@ -1,3 +1,4 @@
+using Dalamud.Game.ClientState.Fates;
 using Dalamud.Game.Text.SeStringHandling;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
@@ -127,6 +128,8 @@ internal static partial class Extensions
         return output;
     }
 
-    public static Vector3 ToVector3(this FlagMapMarker flag) => Coords.MapMarkerToWorld(flag);
+    public static Vector3 ToVector3(this FlagMapMarker flag) => Coords.FlagToWorld(flag);
+
+    public static string Stringify(this IFate fate) => $"[{fate.FateId}] {fate.Position} {fate.Progress}%% {fate.TimeRemaining}/{fate.Duration}";
 }
 

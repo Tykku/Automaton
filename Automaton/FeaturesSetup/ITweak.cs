@@ -2,7 +2,6 @@ namespace Automaton.FeaturesSetup;
 
 public interface ITweak : IDisposable
 {
-    // https://github.com/Haselnussbomber/HaselTweaks
     Type CachedType { get; }
     string InternalName { get; }
     IncompatibilityWarningAttribute[] IncompatibilityWarnings { get; }

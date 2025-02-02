@@ -10,7 +10,7 @@ public sealed class RetrieveAllMateria(GameInventoryItem item) : CommonTasks
         var materias = item.Materia.ToArray().Where(x => x != 0);
         foreach (var materia in materias)
         {
-            P.Memory.MaterializeAction(item, MaterializeEventId.Retrieve);
+            Service.Memory.MaterializeAction(item, MaterializeEventId.Retrieve);
             await WaitUntilThenFalse(() => Svc.Condition[ConditionFlag.Occupied39], "RetrievingMateria");
         }
     }

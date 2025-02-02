@@ -97,9 +97,7 @@ public partial class HaselWindow : Window
                     var (status, color) = GetTweakStatus(tweak);
                     using var tooltip = ImRaii.Tooltip();
                     if (tooltip.Success)
-                    {
                         ImGuiEx.Text((uint)color, status);
-                    }
                 }
 
                 drawList.AddRectFilled(pos, pos + size, ImGui.GetColorU32(ImGuiCol.FrameBg), 3f, ImDrawFlags.RoundCornersAll);
@@ -195,10 +193,18 @@ public partial class HaselWindow : Window
 
         ImGuiEx.Text((uint)color, status);
 
-        if (!string.IsNullOrEmpty(tweak.Description))
+        if (tweak.DisabledReason is { } reason)
         {
-            ImGuiX.DrawPaddedSeparator();
-            ImGuiHelpers.SafeTextColoredWrapped(Colors.Grey2, tweak.Description);
+            ImGuiHelpers.SafeTextColoredWrapped(Colors.Grey2, reason);
+            return;
+        }
+        else
+        {
+            if (!string.IsNullOrEmpty(tweak.Description))
+            {
+                ImGuiX.DrawPaddedSeparator();
+                ImGuiHelpers.SafeTextColoredWrapped(Colors.Grey2, tweak.Description);
+            }
         }
 
         if (tweak.Requirements.Any(entry => !entry.IsLoaded))

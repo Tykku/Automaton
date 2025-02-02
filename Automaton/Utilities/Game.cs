@@ -83,7 +83,7 @@ public unsafe class Game
     public static bool OpenShop(GameObject* vendor, uint shopId)
     {
         PluginLog.Debug($"Interacting with {(ulong)vendor->GetGameObjectId():X}");
-        TargetSystem.Instance()->InteractWithObject(vendor);
+        TargetSystem.Instance()->InteractWithObject(vendor, false);
         var selector = EventHandlerSelector.Instance();
         if (selector->Target == null)
             return true; // assume interaction was successful without selector

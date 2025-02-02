@@ -17,8 +17,8 @@ public sealed class AutoDeliveroo : CommonTasks
 
     private async Task GoToGC()
     {
-        P.Lifestream.ExecuteCommand("gc");
-        await WaitUntilThenFalse(() => P.Lifestream.IsBusy(), $"{nameof(GoToGC)}");
+        Service.Lifestream.ExecuteCommand("gc");
+        await WaitUntilThenFalse(() => Service.Lifestream.IsBusy(), $"{nameof(GoToGC)}");
     }
 
     /*
@@ -73,12 +73,12 @@ public sealed class AutoDeliveroo : CommonTasks
     private async Task TurnIn()
     {
         Svc.Commands.ProcessCommand("/deliveroo enable");
-        await WaitUntilThenFalse(() => P.Deliveroo.IsTurnInRunning(), $"{nameof(TurnIn)}");
+        await WaitUntilThenFalse(() => Service.Deliveroo.IsTurnInRunning(), $"{nameof(TurnIn)}");
     }
 
     private async Task GoHome()
     {
-        P.Lifestream.ExecuteCommand("auto");
-        await WaitUntilThenFalse(() => P.Lifestream.IsBusy(), $"{nameof(GoHome)}");
+        Service.Lifestream.ExecuteCommand("auto");
+        await WaitUntilThenFalse(() => Service.Lifestream.IsBusy(), $"{nameof(GoHome)}");
     }
 }

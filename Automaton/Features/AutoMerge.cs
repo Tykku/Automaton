@@ -18,13 +18,13 @@ public class AutoMerge : Tweak
 
     public override void Enable()
     {
-        P.AddonObserver.AddonOpen += OnSetup;
+        Service.AddonObserver.AddonOpen += OnSetup;
         Sheet = GetSheet<Item>().ToDictionary(x => x.RowId, x => x);
     }
 
     public override void Disable()
     {
-        P.AddonObserver.AddonOpen -= OnSetup;
+        Service.AddonObserver.AddonOpen -= OnSetup;
     }
 
     public class InventorySlot

@@ -1,4 +1,5 @@
 ﻿using Automaton.Utilities.Movement;
+using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
 using Achievement = FFXIVClientStructs.FFXIV.Client.Game.UI.Achievement;
@@ -9,20 +10,37 @@ public abstract class CommonTasks : AutoTask
     private readonly OverrideMovement movement = new();
     private readonly Memory.AchievementProgress achv = new();
 
+    protected async Task MoveTo(FlagMapMarker flag, float tolerance, bool mount = false, bool fly = false)
+    {
+        Status = "Waiting for Navmesh";
+        await WaitWhile(() => Service.Navmesh.BuildProgress() >= 0, "BuildMesh");
+        ErrorIf(!Service.Navmesh.IsReady(), "Failed to build navmesh for the zone");
+        var pof = Service.Navmesh.PointOnFloor(Coords.FlagToWorld(flag), false, 5) ?? throw new Exception("Failed to find point on floor");
+        await MoveTo(pof, tolerance, mount, fly);
+    }
+
     protected async Task MoveTo(Vector3 dest, float tolerance, bool mount = false, bool fly = false)
     {
         using var scope = BeginScope("MoveTo");
         if (Player.DistanceTo(dest) < tolerance)
             return; // already in range
 
-        if (mount)
+        if (Coords.IsTeleportingFaster(dest))
+        {
+            Log("Teleporting faster");
+            await TeleportTo(Player.Territory, dest, allowSameZoneTeleport: true);
+        }
+
+        if (mount || fly)
             await Mount();
 
         // ensure navmesh is ready
-        await WaitWhile(() => P.Navmesh.BuildProgress() >= 0, "BuildMesh");
-        ErrorIf(!P.Navmesh.IsReady(), "Failed to build navmesh for the zone");
-        ErrorIf(!P.Navmesh.PathfindAndMoveTo(dest, fly), "Failed to start pathfinding to destination");
-        using var stop = new OnDispose(P.Navmesh.Stop);
+        Status = "Waiting for Navmesh";
+        await WaitWhile(() => Service.Navmesh.BuildProgress() >= 0, "BuildMesh");
+        ErrorIf(!Service.Navmesh.IsReady(), "Failed to build navmesh for the zone");
+        ErrorIf(!Service.Navmesh.PathfindAndMoveTo(dest, fly), "Failed to start pathfinding to destination");
+        Status = $"Moving to {dest}";
+        using var stop = new OnDispose(Service.Navmesh.Stop);
         await WaitWhile(() => !(Player.DistanceTo(dest) < tolerance), "Navigate");
     }
 
@@ -32,23 +50,26 @@ public abstract class CommonTasks : AutoTask
         if (Player.DistanceTo(dest) < tolerance)
             return;
 
+        Status = $"Moving to {dest}";
         movement.DesiredPosition = dest;
         movement.Enabled = true;
         using var stop = new OnDispose(() => movement.Enabled = false);
         await WaitWhile(() => !(Player.DistanceTo(dest) < tolerance), "DirectNavigate");
     }
 
-    protected async Task TeleportTo(uint territoryId, Vector3 destination)
+    protected async Task TeleportTo(uint territoryId, Vector3 destination, bool allowSameZoneTeleport = false)
     {
         using var scope = BeginScope("Teleport");
-        if (Player.Territory == territoryId)
+        if (!allowSameZoneTeleport && Player.Territory == territoryId)
             return; // already in correct zone
 
-        var closestAetheryteId = Coords.FindClosestAetheryte(territoryId, destination);
+        var closestAetheryteId = Coords.FindClosestAetheryte(territoryId, destination) ?? 0;
         var teleportAetheryteId = Coords.FindPrimaryAetheryte(closestAetheryteId);
         ErrorIf(teleportAetheryteId == 0, $"Failed to find aetheryte in {territoryId}");
-        if (Player.Territory != GetRow<Aetheryte>(teleportAetheryteId)!.Value.Territory.RowId)
+        var row = GetRow<Aetheryte>(teleportAetheryteId)!;
+        if (Player.Territory != row.Value.Territory.RowId)
         {
+            Status = $"Teleporting to {row.Value.PlaceName.Value.Name}";
             ErrorIf(!Coords.ExecuteTeleport(teleportAetheryteId), $"Failed to teleport to {teleportAetheryteId}");
             await WaitWhile(() => !PlayerEx.IsBusy, "TeleportStart");
             await WaitWhile(() => PlayerEx.IsBusy, "TeleportFinish");
@@ -56,6 +77,7 @@ public abstract class CommonTasks : AutoTask
 
         if (teleportAetheryteId != closestAetheryteId)
         {
+            Status = $"Interacting with aethernet to get to [{territoryId}]";
             var (aetheryteId, aetherytePos) = Coords.FindAetheryte(teleportAetheryteId);
             await MoveTo(aetherytePos, 10);
             ErrorIf(!PlayerEx.InteractWith(aetheryteId), "Failed to interact with aetheryte");
@@ -68,6 +90,7 @@ public abstract class CommonTasks : AutoTask
         if (territoryId == 886)
         {
             // firmament special case
+            Status = $"Interacting with aetheryte to get to the Firmament";
             var (aetheryteId, aetherytePos) = Coords.FindAetheryte(teleportAetheryteId);
             await MoveTo(aetherytePos, 10);
             ErrorIf(!PlayerEx.InteractWith(aetheryteId), "Failed to interact with aetheryte");
@@ -84,6 +107,7 @@ public abstract class CommonTasks : AutoTask
     {
         using var scope = BeginScope("Mount");
         if (Player.Mounted) return;
+        Status = "Mounting";
         PlayerEx.Mount();
         await WaitUntil(() => Player.Mounted, "Mounting");
         ErrorIf(!Player.Mounted, "Failed to mount");

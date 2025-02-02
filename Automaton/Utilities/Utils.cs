@@ -1,12 +1,13 @@
+using Dalamud.Game.ClientState.Keys;
 using Dalamud.Interface.Textures.TextureWraps;
 using ECommons.Reflection;
-using FFXIVClientStructs.Attributes;
 using FFXIVClientStructs.FFXIV.Client.System.Framework;
+using FFXIVClientStructs.FFXIV.Client.System.String;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using ImGuiNET;
-using System.Reflection;
 
 namespace Automaton.Utilities;
 public static class Utils
@@ -14,45 +15,6 @@ public static class Utils
     public static IDalamudTextureWrap? GetIcon(uint iconId) => iconId != 0 ? Svc.Texture?.GetFromGameIcon(iconId).GetWrapOrEmpty() : null;
 
     public static bool HasPlugin(string name) => DalamudReflector.TryGetDalamudPlugin(name, out _, false, true);
-
-    private static readonly Dictionary<Type, AgentId> AgentIdCache = [];
-    public static unsafe T* GetAgent<T>(AgentId id) where T : unmanaged
-        => (T*)AgentModule.Instance()->GetAgentByInternalId(id);
-
-    public static unsafe T* GetAgent<T>() where T : unmanaged
-    {
-        var type = typeof(T);
-
-        if (!AgentIdCache.TryGetValue(type, out var id))
-        {
-            var attr = type.GetCustomAttribute<AgentAttribute>(false)
-                ?? throw new Exception($"Agent {type.FullName} is missing AgentAttribute");
-
-            AgentIdCache.Add(type, id = attr.Id);
-        }
-
-        return GetAgent<T>(id);
-    }
-
-    public const int UnitListCount = 18;
-    public static unsafe AtkUnitBase* GetAddonByID(uint id)
-    {
-        var unitManagers = &AtkStage.Instance()->RaptureAtkUnitManager->AtkUnitManager.DepthLayerOneList;
-        for (var i = 0; i < UnitListCount; i++)
-        {
-            var unitManager = &unitManagers[i];
-            foreach (var j in Enumerable.Range(0, Math.Min(unitManager->Count, unitManager->Entries.Length)))
-            {
-                var unitBase = unitManager->Entries[j].Value;
-                if (unitBase != null && unitBase->Id == id)
-                {
-                    return unitBase;
-                }
-            }
-        }
-
-        return null;
-    }
 
     public static unsafe bool IsClickingInGameWorld()
         => !ImGui.IsWindowHovered(ImGuiHoveredFlags.AnyWindow)
@@ -94,5 +56,50 @@ public static class Utils
     {
         var eventData = stackalloc int[] { 0, 0, 0 };
         Agent->AgentInterface.ReceiveEvent((AtkValue*)eventData, args.GetPointer(0), (uint)args.Length, eventKind);
+    }
+
+    public static bool KeybindIsPressed(string name)
+    {
+        var key = KeybindToKey(name);
+        if (!key.HasValue || !Svc.KeyState.IsVirtualKeyValid((int)key)) return false;
+        return Svc.KeyState.GetRawValue((int)key) != 0 || IsKeyPressed((int)key);
+    }
+
+    public static void ResetKeybind(string name)
+    {
+        var key = KeybindToKey(name);
+        if (!key.HasValue || !Svc.KeyState.IsVirtualKeyValid((int)key)) return;
+        Svc.KeyState.SetRawValue((int)key, 0);
+    }
+
+    public static unsafe VirtualKey? KeybindToKey(string name)
+    {
+        VirtualKey? key = null;
+        var keybind = new UIInputData.Keybind();
+        var keyName = Utf8String.FromString(name);
+        var inputData = UIInputData.Instance();
+        inputData->GetKeybind(keyName, &keybind);
+        List<List<nint>?> availableKeys = [GetKeysToPress(keybind.Key, keybind.Modifier), GetKeysToPress(keybind.AltKey, keybind.AltModifier)];
+        var realKeys = availableKeys.Where(x => x != null).Select(x => x!).MinBy(x => x.Count);
+        key = (VirtualKey?)realKeys?.FirstOrDefault();
+        return key == null ? null : key;
+    }
+
+    public static List<nint>? GetKeysToPress(SeVirtualKey key, ModifierFlag modifier)
+    {
+        List<nint> keys = [];
+        if (modifier.HasFlag(ModifierFlag.Ctrl))
+            keys.Add(0x11); // VK_CONTROL
+        if (modifier.HasFlag(ModifierFlag.Shift))
+            keys.Add(0x10); // VK_SHIFT
+        if (modifier.HasFlag(ModifierFlag.Alt))
+            keys.Add(0x12); // VK_MENU
+
+        var mappedKey = (nint)key;
+        if (mappedKey == 0)
+            return null;
+
+        keys.Add(mappedKey);
+        return keys;
     }
 }

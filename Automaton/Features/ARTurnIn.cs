@@ -1,5 +1,4 @@
-﻿using Automaton.IPC;
-using Automaton.Tasks;
+﻿using Automaton.Tasks;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
 using ImGuiNET;
@@ -50,13 +49,13 @@ internal class ARTurnIn : Tweak<ARTurnInConfiguration>
         ImGuiX.DrawSection("Debug");
 
         ImGuiX.TaskState();
-        if (ImGuiComponents.IconButton(P.Automation.CurrentTask == null ? FontAwesomeIcon.Play : FontAwesomeIcon.Stop))
+        if (ImGuiComponents.IconButton(Service.Automation.CurrentTask == null ? FontAwesomeIcon.Play : FontAwesomeIcon.Stop))
         {
-            if (P.Automation.CurrentTask == null)
-                P.Automation.Start(new AutoDeliveroo(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
+            if (Service.Automation.CurrentTask == null)
+                Service.Automation.Start(new AutoDeliveroo(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
             else
             {
-                P.Automation.Stop();
+                Service.Automation.Stop();
                 AutoRetainer.FinishCharacterPostProcess();
                 P.UsingARPostProcess = false;
             }
@@ -66,18 +65,18 @@ internal class ARTurnIn : Tweak<ARTurnInConfiguration>
     private void CheckCharacter()
     {
         if (Config.ExcludedCharacters.Any(x => x == Svc.ClientState.LocalContentId))
-            Svc.Log.Info("Skipping post process turn in for character: character excluded.");
+            Log("Skipping post process turn in for character: character excluded.");
         else
         {
-            if (!P.UsingARPostProcess && P.AutoRetainer.GetInventoryFreeSlotCount() <= Config.InventoryFreeSlotThreshold)
+            if (!P.UsingARPostProcess && Service.AutoRetainerIPC.GetInventoryFreeSlotCount() <= Config.InventoryFreeSlotThreshold)
             {
                 P.UsingARPostProcess = true;
                 AutoRetainer.RequestCharacterPostprocess();
             }
             else
-                Svc.Log.Info("Skipping post process turn in for character: inventory above threshold.");
+                Log("Skipping post process turn in for character: inventory above threshold.");
         }
     }
 
-    private void TurnIn() => P.Automation.Start(new AutoDeliveroo(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
+    private void TurnIn() => Service.Automation.Start(new AutoDeliveroo(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
 }

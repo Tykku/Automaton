@@ -88,13 +88,25 @@ public class DebugTools : Tweak<DebugToolsConfiguration>
         ncActive = false;
     }
 
+    class MovementKeys
+    {
+        public const string Forward = "MOVE_FORE";
+        public const string Backward = "MOVE_BACK";
+        public const string Left = "MOVE_LEFT";
+        public const string Right = "MOVE_RIGHT";
+        public const string Strife_L = "MOVE_STRIFE_L";
+        public const string Strife_R = "MOVE_STRIFE_R";
+        public const string Jump = "JUMP";
+    }
+
     public static bool ShowMouseOverlay;
     private bool IsLButtonPressed;
     private bool tpActive;
     private bool ncActive;
     private unsafe void OnUpdate(IFramework framework)
     {
-        if (!Player.Available || PlayerEx.IsBusy) return;
+        if (!Player.Available || IsOccupied()) return;
+
         ShowMouseOverlay = false;
         if (Config.EnableTPClick && tpActive)
         {
@@ -118,9 +130,9 @@ public class DebugTools : Tweak<DebugToolsConfiguration>
 
         if (Config.EnableNoClip && ncActive && !Framework.Instance()->WindowInactive)
         {
-            if (Svc.KeyState.GetRawValue(VirtualKey.SPACE) != 0 || IsKeyPressed(LimitedKeys.Space))
+            if (Utils.KeybindIsPressed(MovementKeys.Jump))
             {
-                Svc.KeyState.SetRawValue(VirtualKey.SPACE, 0);
+                Utils.ResetKeybind(MovementKeys.Jump);
                 PlayerEx.Position = (Player.Object.Position.X, Player.Object.Position.Y + Config.NoClipSpeed, Player.Object.Position.Z).ToVector3();
             }
             if (Svc.KeyState.GetRawValue(VirtualKey.LSHIFT) != 0 || IsKeyPressed(LimitedKeys.LeftShiftKey))
@@ -128,28 +140,30 @@ public class DebugTools : Tweak<DebugToolsConfiguration>
                 Svc.KeyState.SetRawValue(VirtualKey.LSHIFT, 0);
                 PlayerEx.Position = (Player.Object.Position.X, Player.Object.Position.Y - Config.NoClipSpeed, Player.Object.Position.Z).ToVector3();
             }
-            if (Svc.KeyState.GetRawValue(VirtualKey.W) != 0 || IsKeyPressed(LimitedKeys.W))
+            if (Utils.KeybindIsPressed(MovementKeys.Forward))
             {
                 var newPoint = Utils.RotatePoint(Player.Object.Position.X, Player.Object.Position.Z, MathF.PI - PlayerEx.CameraEx->DirH, Player.Object.Position + new Vector3(0, 0, Config.NoClipSpeed));
-                Svc.KeyState.SetRawValue(VirtualKey.W, 0);
+                Utils.ResetKeybind(MovementKeys.Forward);
                 PlayerEx.Position = newPoint;
             }
-            if (Svc.KeyState.GetRawValue(VirtualKey.S) != 0 || IsKeyPressed(LimitedKeys.S))
+            if (Utils.KeybindIsPressed(MovementKeys.Backward))
             {
                 var newPoint = Utils.RotatePoint(Player.Object.Position.X, Player.Object.Position.Z, MathF.PI - PlayerEx.CameraEx->DirH, Player.Object.Position + new Vector3(0, 0, -Config.NoClipSpeed));
-                Svc.KeyState.SetRawValue(VirtualKey.S, 0);
+                Utils.ResetKeybind(MovementKeys.Backward);
                 PlayerEx.Position = newPoint;
             }
-            if (Svc.KeyState.GetRawValue(VirtualKey.A) != 0 || IsKeyPressed(LimitedKeys.A))
+            if (Utils.KeybindIsPressed(MovementKeys.Left) || Utils.KeybindIsPressed(MovementKeys.Strife_L))
             {
                 var newPoint = Utils.RotatePoint(Player.Object.Position.X, Player.Object.Position.Z, MathF.PI - PlayerEx.CameraEx->DirH, Player.Object.Position + new Vector3(Config.NoClipSpeed, 0, 0));
-                Svc.KeyState.SetRawValue(VirtualKey.A, 0);
+                Utils.ResetKeybind(MovementKeys.Left);
+                Utils.ResetKeybind(MovementKeys.Strife_L);
                 PlayerEx.Position = newPoint;
             }
-            if (Svc.KeyState.GetRawValue(VirtualKey.D) != 0 || IsKeyPressed(LimitedKeys.D))
+            if (Utils.KeybindIsPressed(MovementKeys.Right) || Utils.KeybindIsPressed(MovementKeys.Strife_R))
             {
                 var newPoint = Utils.RotatePoint(Player.Object.Position.X, Player.Object.Position.Z, MathF.PI - PlayerEx.CameraEx->DirH, Player.Object.Position + new Vector3(-Config.NoClipSpeed, 0, 0));
-                Svc.KeyState.SetRawValue(VirtualKey.D, 0);
+                Utils.ResetKeybind(MovementKeys.Right);
+                Utils.ResetKeybind(MovementKeys.Strife_R);
                 PlayerEx.Position = newPoint;
             }
         }

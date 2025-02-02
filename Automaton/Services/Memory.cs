@@ -4,16 +4,15 @@ using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
-using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Common.Lua;
 using System.Runtime.InteropServices;
 
-namespace Automaton.Utilities;
+namespace Automaton.Services;
 #pragma warning disable CS0649
-internal unsafe class Memory
+public unsafe class Memory
 {
     public static class Signatures
     {
@@ -45,39 +44,88 @@ internal unsafe class Memory
         internal const string ProcessSentChat = "E8 ?? ?? ?? ?? FE 86 ?? ?? ?? ?? C7 86 ?? ?? ?? ?? ?? ?? ?? ??";
         internal const string RetrieveMateria = "E8 ?? ?? ?? ?? EB 27 48 8B 01"; // Client::UI::Agent::AgentMaterialize.ReceiveEvent	call    sub_140B209C0
         internal const string AgentMateriaAttachReceiveEvent = "E8 ?? ?? ?? ?? 84 C0 74 7E 48 8B CB"; // look around sub_1416B7280
+        internal const string CanDismount = "E8 ?? ?? ?? ?? F3 0F 10 74 24 ?? F3 0F 10 3D ?? ?? ?? ??"; // needs more testing, I don't think this actually is useful for dismount checking
     }
 
-    internal unsafe delegate void RidePillionDelegate(BattleChara* target, int seatIndex);
-    internal RidePillionDelegate? RidePillion = null!;
-
-    internal unsafe delegate void SalvageItemDelegate(AgentSalvage* thisPtr, InventoryItem* item, int addonId, byte a4);
-    internal SalvageItemDelegate SalvageItem = null!;
-
-    internal delegate void AbandonDutyDelegate(bool a1);
-    internal AbandonDutyDelegate AbandonDuty = null!;
-
-    internal delegate nint AgentWorldTravelReceiveEventDelegate(Structs.AgentWorldTravel* agent, nint a2, nint a3, nint a4, long eventCase);
-    internal AgentWorldTravelReceiveEventDelegate WorldTravel = null!;
-
-    internal delegate nint WorldTravelSetupInfoDelegate(nint worldTravel, ushort currentWorld, ushort targetWorld);
-    internal WorldTravelSetupInfoDelegate WorldTravelSetupInfo = null!;
-
-    internal delegate void RetrieveMateriaDelegate(EventFramework* framework, int eventID, InventoryType inventoryType, short inventorySlot, int extraParam);
-    internal RetrieveMateriaDelegate? RetrieveMateria = null!;
-
-    internal delegate byte MateriaAttachReceiveEventDelegate(nint a1, nint a2, nint a3, byte a4);
-    internal MateriaAttachReceiveEventDelegate AgentMateriaAttachReceiveEvent = null!;
-
-    public Memory()
+    public static class Delegates
     {
-        EzSignatureHelper.Initialize(this);
-        RidePillion = Marshal.GetDelegateForFunctionPointer<RidePillionDelegate>(Svc.SigScanner.ScanText(Signatures.RidePillion));
-        SalvageItem = Marshal.GetDelegateForFunctionPointer<SalvageItemDelegate>(Svc.SigScanner.ScanText(Signatures.SalvageItem));
-        AbandonDuty = Marshal.GetDelegateForFunctionPointer<AbandonDutyDelegate>(Svc.SigScanner.ScanText(Signatures.AbandonDuty));
-        WorldTravel = Marshal.GetDelegateForFunctionPointer<AgentWorldTravelReceiveEventDelegate>(Svc.SigScanner.ScanText(Signatures.WorldTravel));
-        WorldTravelSetupInfo = Marshal.GetDelegateForFunctionPointer<WorldTravelSetupInfoDelegate>(Svc.SigScanner.ScanText(Signatures.WorldTravelSetupInfo));
-        RetrieveMateria = Marshal.GetDelegateForFunctionPointer<RetrieveMateriaDelegate>(Svc.SigScanner.ScanText(Signatures.RetrieveMateria));
-        AgentMateriaAttachReceiveEvent = Marshal.GetDelegateForFunctionPointer<MateriaAttachReceiveEventDelegate>(Svc.SigScanner.ScanText(Signatures.AgentMateriaAttachReceiveEvent));
+        internal delegate void AbandonDutyDelegate(bool a1);
+        internal delegate byte AgentReturnReceiveEventDelegate(AgentInterface* agent);
+        internal delegate nint AgentWorldTravelReceiveEventDelegate(Structs.AgentWorldTravel* agent, nint a2, nint a3, nint a4, long eventCase);
+        internal delegate byte CanDismountDelegate(nint a1, float* a2, Vector3* gameObjectPosition);
+        internal delegate ulong EnqueueSnipeTaskDelegate(EventSceneModuleImplBase* scene, lua_State* state);
+        internal delegate nint ExecuteCommandDelegate(int command, int a1 = 0, int a2 = 0, int a3 = 0, int a4 = 0);
+        internal delegate nint ExecuteCommandComplexLocationDelegate(int command, Vector3 position, int param1, int param2, int param3, int param4);
+        internal delegate void FreeCompanyDialogPacketReceiveDelegate(InfoProxyInterface* ptr, byte* packetData);
+        internal delegate byte GetGrandCompanyRankDelegate(nint a1);
+        internal delegate nint IsFlightProhibited(nint a1);
+        internal delegate long IsItemUniqueDelegate(InventoryManager* ptr, uint a1, uint a2, byte a3);
+        internal delegate bool FollowQuestRecastDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+        internal delegate long KbProcDelegate(long gameobj, float rot, float length, long a4, char a5, int a6);
+        internal delegate nint NoBewitchActionDelegate(CSGameObject* gameObj, float x, float y, float z, int a5, nint a6);
+        internal delegate void ReceiveAchievementProgressDelegate(Achievement* achievement, uint id, uint current, uint max);
+        internal delegate void RetrieveMateriaDelegate(EventFramework* framework, int eventID, InventoryType inventoryType, short inventorySlot, int extraParam);
+        internal delegate void RidePillionDelegate(BattleChara* target, int seatIndex);
+        internal delegate void SalvageItemDelegate(AgentSalvage* thisPtr, InventoryItem* item, int addonId, byte a4);
+        internal delegate byte ShouldDrawDelegate(CameraBase* thisPtr, CSGameObject* gameObject, Vector3* sceneCameraPos, Vector3* lookAtVector);
+        internal delegate nint WorldTravelSetupInfoDelegate(nint worldTravel, ushort currentWorld, ushort targetWorld);
+    }
+
+    internal Delegates.RidePillionDelegate? RidePillion = EzDelegate.Get<Delegates.RidePillionDelegate>(Signatures.RidePillion);
+    internal Delegates.SalvageItemDelegate? SalvageItem = EzDelegate.Get<Delegates.SalvageItemDelegate>(Signatures.SalvageItem);
+    internal Delegates.AbandonDutyDelegate? AbandonDuty = EzDelegate.Get<Delegates.AbandonDutyDelegate>(Signatures.AbandonDuty);
+    internal Delegates.AgentWorldTravelReceiveEventDelegate? WorldTravel = EzDelegate.Get<Delegates.AgentWorldTravelReceiveEventDelegate>(Signatures.WorldTravel);
+    internal Delegates.WorldTravelSetupInfoDelegate? WorldTravelSetupInfo = EzDelegate.Get<Delegates.WorldTravelSetupInfoDelegate>(Signatures.WorldTravelSetupInfo);
+    internal Delegates.RetrieveMateriaDelegate? RetrieveMateria = EzDelegate.Get<Delegates.RetrieveMateriaDelegate>(Signatures.RetrieveMateria);
+    internal Delegates.ExecuteCommandDelegate? ExecuteCommand = EzDelegate.Get<Delegates.ExecuteCommandDelegate>(Signatures.ExecuteCommand);
+
+    public Memory() => EzSignatureHelper.Initialize(this);
+
+    public static class MemoryMap
+    {
+        public static readonly Dictionary<Type, string> Map = new()
+        {
+            { typeof(Delegates.AbandonDutyDelegate), Signatures.AbandonDuty },
+            { typeof(Delegates.AgentReturnReceiveEventDelegate), Signatures.AgentReturnReceiveEvent },
+            { typeof(Delegates.AgentWorldTravelReceiveEventDelegate), Signatures.WorldTravel },
+            { typeof(Delegates.CanDismountDelegate), Signatures.CanDismount },
+            { typeof(Delegates.EnqueueSnipeTaskDelegate), Signatures.EnqueueSnipeTask },
+            { typeof(Delegates.ExecuteCommandDelegate), Signatures.ExecuteCommand },
+            { typeof(Delegates.ExecuteCommandComplexLocationDelegate), Signatures.ExecuteCommandComplexLocation },
+            { typeof(Delegates.FreeCompanyDialogPacketReceiveDelegate), Signatures.FreeCompanyDialogPacketReceive },
+            { typeof(Delegates.GetGrandCompanyRankDelegate), Signatures.GetGrandCompanyRank },
+            { typeof(Delegates.IsFlightProhibited), Signatures.FlightProhibited },
+            { typeof(Delegates.IsItemUniqueDelegate), Signatures.InventoryManagerUniqueItemCheck },
+            { typeof(Delegates.FollowQuestRecastDelegate), Signatures.FollowQuestRecast },
+            { typeof(Delegates.KbProcDelegate), Signatures.KnockbackProc },
+            { typeof(Delegates.NoBewitchActionDelegate), Signatures.BewitchProc },
+            { typeof(Delegates.ReceiveAchievementProgressDelegate), Signatures.ReceiveAchievementProgress },
+            { typeof(Delegates.RetrieveMateriaDelegate), Signatures.RetrieveMateria },
+            { typeof(Delegates.RidePillionDelegate), Signatures.RidePillion },
+            { typeof(Delegates.SalvageItemDelegate), Signatures.SalvageItem },
+            { typeof(Delegates.ShouldDrawDelegate), Signatures.ShouldDraw },
+            { typeof(Delegates.WorldTravelSetupInfoDelegate), Signatures.WorldTravelSetupInfo },
+        };
+
+        public static string GetSignature<T>() where T : Delegate => Map.TryGetValue(typeof(T), out var signature) ? signature
+                : throw new KeyNotFoundException($"No signature mapping found for delegate type {typeof(T).Name}");
+
+        public static T GetDelegate<T>() where T : Delegate, IMappedDelegate => EzDelegate.Get<T>(GetSignature<T>());
+
+        public interface IMappedDelegate { }
+        public class MappedDelegate<T> : IMappedDelegate where T : Delegate
+        {
+            static MappedDelegate()
+            {
+                if (!Map.ContainsKey(typeof(T)))
+                    throw new ArgumentException($"Type {typeof(T)} is not registered in MemoryMap");
+            }
+        }
+    }
+
+    public class Hook
+    {
+        public Hook() => EzSignatureHelper.Initialize(this);
     }
 
     public void Dispose() { }
@@ -102,7 +150,7 @@ internal unsafe class Memory
         {
             const byte DefaultReturnValue = 1;
 
-            if (a2 == IntPtr.Zero)
+            if (a2 == nint.Zero)
             {
                 PluginLog.Error("[HyperFirewall] Error: Opcode pointer is null.");
                 return DefaultReturnValue;
@@ -135,7 +183,7 @@ internal unsafe class Memory
 
         private void PacketDispatcher_OnReceivePacketDetour(nint a1, uint a2, nint a3)
         {
-            if (a3 == IntPtr.Zero)
+            if (a3 == nint.Zero)
             {
                 PluginLog.Error("[HyperFirewall] Error: Data pointer is null.");
                 return;
@@ -171,9 +219,8 @@ internal unsafe class Memory
     #region Bewitch
     public class BewitchProc : Hook
     {
-        internal unsafe delegate nint NoBewitchActionDelegate(CSGameObject* gameObj, float x, float y, float z, int a5, nint a6);
         [EzHook(Signatures.BewitchProc, false)]
-        internal readonly EzHook<NoBewitchActionDelegate>? BewitchHook;
+        internal readonly EzHook<Delegates.NoBewitchActionDelegate>? BewitchHook;
 
         private unsafe nint BewitchDetour(CSGameObject* gameObj, float x, float y, float z, int a5, nint a6)
         {
@@ -199,9 +246,8 @@ internal unsafe class Memory
     #region Knockback
     public class KnockbackProc : Hook
     {
-        internal delegate long kbprocDelegate(long gameobj, float rot, float length, long a4, char a5, int a6);
         [EzHook(Signatures.KnockbackProc, false)]
-        internal readonly EzHook<kbprocDelegate>? KBProcHook;
+        internal readonly EzHook<Delegates.KbProcDelegate>? KBProcHook;
 
         internal long KBProcDetour(long gameobj, float rot, float length, long a4, char a5, int a6) => KBProcHook!.Original(gameobj, rot, 0f, a4, a5, a6);
     }
@@ -210,9 +256,8 @@ internal unsafe class Memory
     #region Achievements
     public class AchievementProgress : Hook
     {
-        internal delegate void ReceiveAchievementProgressDelegate(Achievement* achievement, uint id, uint current, uint max);
         [EzHook(Signatures.ReceiveAchievementProgress, false)]
-        internal EzHook<ReceiveAchievementProgressDelegate> ReceiveAchievementProgressHook = null!;
+        internal EzHook<Delegates.ReceiveAchievementProgressDelegate> ReceiveAchievementProgressHook = null!;
 
         internal uint LastId;
         internal uint LastCurrent;
@@ -242,8 +287,7 @@ internal unsafe class Memory
     public class SnipeQuestSequence : Hook
     {
         [EzHook(Signatures.EnqueueSnipeTask, false)]
-        internal EzHook<EnqueueSnipeTaskDelegate> SnipeHook = null!;
-        internal delegate ulong EnqueueSnipeTaskDelegate(EventSceneModuleImplBase* scene, lua_State* state);
+        internal EzHook<Delegates.EnqueueSnipeTaskDelegate> SnipeHook = null!;
 
         private ulong SnipeDetour(EventSceneModuleImplBase* scene, lua_State* state)
         {
@@ -267,8 +311,7 @@ internal unsafe class Memory
     public class FollowQuestRecastCheck : Hook
     {
         [EzHook(Signatures.FollowQuestRecast, false)]
-        internal EzHook<FollowQuestRecastDelegate> RecastHook = null!;
-        internal delegate bool FollowQuestRecastDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
+        internal EzHook<Delegates.FollowQuestRecastDelegate> RecastHook = null!;
         internal bool RecastDetour(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6) => false;
     }
     #endregion
@@ -276,12 +319,11 @@ internal unsafe class Memory
     #region Flight Prohibited
     public class FlightProhibited : Hook
     {
-        internal delegate nint IsFlightProhibited(nint a1);
         /// <remarks>
         /// This only resolves on the client side, e.g. other people will not see you fly. Packet filter if using.
         /// </remarks>
         [EzHook(Signatures.FlightProhibited, false)]
-        internal readonly EzHook<IsFlightProhibited> IsFlightProhibitedHook = null!;
+        internal readonly EzHook<Delegates.IsFlightProhibited> IsFlightProhibitedHook = null!;
 
         internal unsafe nint IsFlightProhibitedDetour(nint a1)
         {
@@ -306,9 +348,8 @@ internal unsafe class Memory
     #region Return Receive Event
     public class AgentReturn : Hook
     {
-        internal delegate byte AgentReturnReceiveEventDelegate(AgentInterface* agent);
         [EzHook(Signatures.AgentReturnReceiveEvent, false)]
-        internal readonly EzHook<AgentReturnReceiveEventDelegate> ReturnHook = null!;
+        internal readonly EzHook<Delegates.AgentReturnReceiveEventDelegate> ReturnHook = null!;
 
         private readonly ExecuteCommands ExecuteCommands = new();
         private byte ReturnDetour(AgentInterface* agent)
@@ -333,13 +374,11 @@ internal unsafe class Memory
     #region ExecuteCommand
     public class ExecuteCommands : Hook
     {
-        internal delegate nint ExecuteCommandDelegate(int command, int param1, int param2, int param3, int param4);
         [EzHook(Signatures.ExecuteCommand, false)]
-        internal readonly EzHook<ExecuteCommandDelegate> ExecuteCommandHook = null!;
+        internal readonly EzHook<Delegates.ExecuteCommandDelegate> ExecuteCommandHook = null!;
 
-        internal delegate nint ExecuteCommandComplexLocationDelegate(int command, Vector3 position, int param1, int param2, int param3, int param4);
         [EzHook(Signatures.ExecuteCommandComplexLocation, false)]
-        internal readonly EzHook<ExecuteCommandComplexLocationDelegate> ExecuteCommandComplexLocationHook = null!;
+        internal readonly EzHook<Delegates.ExecuteCommandComplexLocationDelegate> ExecuteCommandComplexLocationHook = null!;
 
         internal nint ExecuteCommand(int command, int param1 = 0, int param2 = 0, int param3 = 0, int param4 = 0)
         {
@@ -355,7 +394,7 @@ internal unsafe class Memory
 
         private nint ExecuteCommandDetour(int command, int param1, int param2, int param3, int param4)
         {
-            Svc.Log.Debug($"[{nameof(ExecuteCommandDetour)}]: cmd:({command}) | p1:{param1} | p2:{param2} | p3:{param3} | p4:{param4}");
+            Svc.Log.Debug($"[{nameof(ExecuteCommandDetour)}]: cmd:[{command}] {(ExecuteCommandFlag)command} | p1:{param1} | p2:{param2} | p3:{param3} | p4:{param4}");
             return ExecuteCommandHook.Original(command, param1, param2, param3, param4);
         }
 
@@ -382,9 +421,8 @@ internal unsafe class Memory
     #region Get Grand Company Rank
     public class GrandCompanyRank : Hook
     {
-        internal delegate byte GetGrandCompanyRankDelegate(nint a1);
         [EzHook(Signatures.GetGrandCompanyRank, false)]
-        internal readonly EzHook<GetGrandCompanyRankDelegate> GCRankHook = null!;
+        internal readonly EzHook<Delegates.GetGrandCompanyRankDelegate> GCRankHook = null!;
         internal byte GCRankDetour(nint a1) => 17;
     }
     #endregion
@@ -392,19 +430,17 @@ internal unsafe class Memory
     #region Camera Object Culling
     public class CameraObjectCulling : Hook
     {
-        internal delegate byte ShouldDrawDelegate(CameraBase* thisPtr, GameObject* gameObject, Vector3* sceneCameraPos, Vector3* lookAtVector);
         [EzHook(Signatures.ShouldDraw, false)]
-        internal readonly EzHook<ShouldDrawDelegate> ShouldDrawHook = null!;
-        internal byte ShouldDrawDetour(CameraBase* thisPtr, GameObject* gameObject, Vector3* sceneCameraPos, Vector3* lookAtVector) => 1;
+        internal readonly EzHook<Delegates.ShouldDrawDelegate> ShouldDrawHook = null!;
+        internal byte ShouldDrawDetour(CameraBase* thisPtr, CSGameObject* gameObject, Vector3* sceneCameraPos, Vector3* lookAtVector) => 1;
     }
     #endregion
 
     #region Unique Item Check Bypass
     public class AllowUniqueItems : Hook
     {
-        internal delegate long IsItemUniqueDelegate(InventoryManager* ptr, uint a1, uint a2, byte a3);
         [EzHook(Signatures.InventoryManagerUniqueItemCheck, false)]
-        internal readonly EzHook<IsItemUniqueDelegate> UniqueItemCheckHook = null!;
+        internal readonly EzHook<Delegates.IsItemUniqueDelegate> UniqueItemCheckHook = null!;
         internal long IgnoreUniqueCheckDetour(InventoryManager* ptr, uint a1, uint a2, byte a3)
         {
             Svc.Log.Info($"{nameof(IgnoreUniqueCheckDetour)}: [{a1} {a2} {a3}]");
@@ -442,9 +478,8 @@ internal unsafe class Memory
     #region Server IPC Packet Receive
     public class FreeCompanyDialogIPCReceive : Hook
     {
-        internal delegate void FreeCompanyDialogPacketReceiveDelegate(InfoProxyInterface* ptr, byte* packetData);
         [EzHook(Signatures.FreeCompanyDialogPacketReceive, false)]
-        internal readonly EzHook<FreeCompanyDialogPacketReceiveDelegate> FreeCompanyDialogPacketReceiveHook = null!;
+        internal readonly EzHook<Delegates.FreeCompanyDialogPacketReceiveDelegate> FreeCompanyDialogPacketReceiveHook = null!;
 
         internal DateTime LastPacketTimestamp = DateTime.MinValue;
         private void FreeCompanyDialogPacketReceiveDetour(InfoProxyInterface* ptr, byte* packetData)
@@ -467,4 +502,19 @@ internal unsafe class Memory
         catch (Exception e) { e.Log(); }
     }
     #endregion
+
+    #region Can Dismount
+    public class DismountCheck : Hook
+    {
+        [EzHook(Signatures.CanDismount, false)]
+        internal readonly EzHook<Delegates.CanDismountDelegate> CanDismountHook = null!;
+
+        private byte CanDismountDetour(nint a1, float* a2, Vector3* a3)
+        {
+            TryExecute(() => Svc.Log.Info($"{nameof(CanDismountDetour)}: [{a1} {*a2} {*a3}]"));
+            return CanDismountHook.Original(a1, a2, a3);
+        }
+    }
+    #endregion
 }
+

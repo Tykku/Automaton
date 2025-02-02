@@ -1,5 +1,4 @@
-﻿using Automaton.IPC;
-using Automaton.Tasks;
+﻿using Automaton.Tasks;
 using Automaton.Utilities.Movement;
 using Dalamud.Interface;
 using Dalamud.Interface.Components;
@@ -34,19 +33,19 @@ internal class ARCeruleum : Tweak
         ImGuiX.DrawSection("Debug");
 
         ImGuiX.TaskState();
-        if (ImGuiComponents.IconButton(P.Automation.CurrentTask == null ? FontAwesomeIcon.Play : FontAwesomeIcon.Stop))
+        if (ImGuiComponents.IconButton(Service.Automation.CurrentTask == null ? FontAwesomeIcon.Play : FontAwesomeIcon.Stop))
         {
-            if (P.Automation.CurrentTask == null)
-                P.Automation.Start(new BuyCeruleumTanks(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
+            if (Service.Automation.CurrentTask == null)
+                Service.Automation.Start(new BuyCeruleumTanks(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
             else
             {
-                P.Automation.Stop();
+                Service.Navmesh.Stop();
                 AutoRetainer.FinishCharacterPostProcess();
                 P.UsingARPostProcess = false;
             }
         }
 
-        ImGui.TextUnformatted($"AR:{P.AutoRetainer.IsBusy()} {P.AutoRetainer.GetSuppressed()}");
+        ImGui.TextUnformatted($"AR:{Service.AutoRetainerIPC.IsBusy()} {Service.AutoRetainerIPC.GetSuppressed()}");
         if (TryGetAddonMaster<AddonMaster.FreeCompanyCreditShop>(out var am))
             ImGui.TextUnformatted($"FC:{am.Items[0].QuantityInInventory} {Inventory.GetItemCount(CeruleumTankId)}");
     }
@@ -60,16 +59,16 @@ internal class ARCeruleum : Tweak
 
     private unsafe void CheckCharacter()
     {
-        if (!P.UsingARPostProcess && P.AutoRetainerAPI.GetOfflineCharacterData(Player.CID).EnabledSubs.Count > 0 && InventoryManager.Instance()->GetInventoryItemCount(CeruleumTankId) <= 200 && CompanyWorkshopTerritories.Contains(Player.Territory))
+        if (!P.UsingARPostProcess && Service.AutoRetainerApi.GetOfflineCharacterData(Player.CID).EnabledSubs.Count > 0 && InventoryManager.Instance()->GetInventoryItemCount(CeruleumTankId) <= 200 && CompanyWorkshopTerritories.Contains(Player.Territory))
         {
             P.UsingARPostProcess = true;
             AutoRetainer.RequestCharacterPostprocess();
         }
         else
-            Svc.Log.Info("Skipping post process turn in for character: inventory above threshold or not in workshop.");
+            Log("Skipping post process turn in for character: inventory above threshold or not in workshop.");
     }
 
-    private unsafe void BuyTanks() => P.Automation.Start(new BuyCeruleumTanks(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
+    private unsafe void BuyTanks() => Service.Automation.Start(new BuyCeruleumTanks(), () => { AutoRetainer.FinishCharacterPostProcess(); P.UsingARPostProcess = false; });
     //private static uint Amount;
     //private unsafe void BuyTanks()
     //{

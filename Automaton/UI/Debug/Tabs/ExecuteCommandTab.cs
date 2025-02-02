@@ -1,4 +1,5 @@
 ﻿using Dalamud.Interface.Utility.Raii;
+using ECommons.ImGuiMethods;
 using ImGuiNET;
 
 namespace Automaton.UI.Debug.Tabs;
@@ -12,7 +13,7 @@ internal unsafe class ExecuteCommandTab : DebugTab
 
     public override void Draw()
     {
-        ImGuiX.Enum("ExecuteCommand", ref flag);
+        ImGuiEx.EnumCombo("ExecuteCommand", ref flag);
         ImGui.InputInt("p1", ref ecParams[0]);
         ImGui.InputInt("p2", ref ecParams[1]);
         ImGui.InputInt("p3", ref ecParams[2]);
@@ -21,7 +22,7 @@ internal unsafe class ExecuteCommandTab : DebugTab
             ec.ExecuteCommand(flag, ecParams[0], ecParams[1], ecParams[2], ecParams[3]);
 
         using var id = ImRaii.PushId("complex");
-        ImGuiX.Enum("ExecuteCommandComplex", ref flag2);
+        ImGuiEx.EnumCombo("ExecuteCommandComplex", ref flag2);
         ImGui.InputInt("p1", ref eccParams[0]);
         ImGui.InputInt("p2", ref eccParams[1]);
         ImGui.InputInt("p3", ref eccParams[2]);

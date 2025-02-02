@@ -32,7 +32,7 @@ internal static class YesAlready
 
     internal static void Tick()
     {
-        if (P.TaskManager.IsBusy)
+        if (Service.TaskManager.IsBusy)
         {
             if (IsEnabled())
             {

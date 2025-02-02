@@ -1,4 +1,3 @@
-using Automaton.IPC;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Memory;
 using ECommons;
@@ -47,7 +46,7 @@ public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
     {
         if (id == AchievementId)
         {
-            Svc.Log.Info($"setting loop count to {max - current}");
+            Log($"setting loop count to {max - current}");
             Config.NumberOfLoops = (int)(max - current);
         }
     }
@@ -83,7 +82,7 @@ public unsafe class GettingTooAttached : Tweak<GettingTooAttachedConfiguration>
 
     private void CheckForErrors(ref SeString message, ref bool isHandled)
     {
-        var msg = message.ExtractText();
+        var msg = message.GetText();
         if (new[] { 7701, 7707 }.Any(x => msg == FindRow<LogMessage>(y => y.RowId == x)?.Text.ExtractText()))
         {
             ModuleMessage("Error while melding. Aborting Tasks.");

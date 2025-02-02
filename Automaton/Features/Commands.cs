@@ -5,7 +5,6 @@ using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using FFXIVClientStructs.Interop;
 using Lumina.Excel.Sheets;
-using GC = ECommons.ExcelServices.GrandCompany;
 using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
 
 namespace Automaton.Features;
@@ -13,15 +12,6 @@ public class CommandsConfiguration
 {
     [BoolConfig(Label = "/tpflag")]
     public bool EnableTPFlag = false;
-
-    [BoolConfig(Label = "/tpgc")]
-    public bool EnableTPGC = false;
-
-    //[BoolConfig(Label = "/tplast")]
-    //public bool EnableTPLast = false;
-
-    //[BoolConfig(Label = "/tpquest")]
-    //public bool EnableTPQuest = false;
 
     [BoolConfig(Label = "/equip")]
     public bool EnableEquip = false;
@@ -34,6 +24,9 @@ public class CommandsConfiguration
 
     [BoolConfig(Label = "/item")]
     public bool EnableUseItem = false;
+
+    [BoolConfig(Label = "/killflag")]
+    public bool EnableKillFlag = false;
 }
 
 [Tweak]
@@ -46,45 +39,10 @@ public partial class Commands : Tweak<CommandsConfiguration>
     [CommandHandler(["/tpf", "/tpflag"], "Teleport to the aetheryte nearest your flag", nameof(Config.EnableTPFlag))]
     internal void OnCommmandTeleportFlag(string command, string arguments)
     {
-        Coords.TeleportToAetheryte(Coords.GetNearestAetheryte(PlayerEx.MapFlag));
+        if (Coords.FindClosestAetheryte(PlayerEx.MapFlag, false) is { } aetheryte)
+            Coords.ExecuteTeleport(aetheryte);
     }
     #endregion
-
-    #region Teleport GC
-    [CommandHandler("/tpgc", "Teleport to the aetheryte of your grand company", nameof(Config.EnableTPGC))]
-    internal void OnCommmandTeleportGC(string command, string arguments)
-    {
-        switch (Player.GrandCompany)
-        {
-            case GC.Maelstrom:
-                Svc.Commands.ProcessCommand($"/tp {GetRow<Aetheryte>(8)!.Value.PlaceName.Value!.Name}");
-                break;
-            case GC.TwinAdder:
-                Svc.Commands.ProcessCommand($"/tp {GetRow<Aetheryte>(2)!.Value.PlaceName.Value!.Name}");
-                break;
-            case GC.ImmortalFlames:
-                Svc.Commands.ProcessCommand($"/tp {GetRow<Aetheryte>(9)!.Value.PlaceName.Value!.Name}");
-                break;
-            default:
-                ModuleMessage("No Grand Company");
-                break;
-        }
-    }
-    #endregion
-
-    //#region Teleport Quest
-    //[CommandHandler(["/tpq", "/tpquest"], "Teleport to the aetheryte nearest your current quest", nameof(Config.EnableTPQuest))]
-    //internal void OnCommmandTeleportQuest(string command, string arguments)
-    //{
-    //    var quest = Player.QuestLocations.FirstOrDefault();
-    //    if (Player.QuestLocations.Count != 0)
-    //    {
-    //        var aetheryte = Coords.GetNearestAetheryte(quest);
-    //        Svc.Log.Info($"Teleporting to {GetRow<Aetheryte>(aetheryte).AethernetName.Value.Name.RawString} for quest in {GetRow<TerritoryType>(quest.TerritoryTypeId).PlaceName.Value.Name.RawString}");
-    //        Coords.TeleportToAetheryte(aetheryte);
-    //    }
-    //}
-    //#endregion
 
     #region Equip
     [CommandHandler("/equip", "Equip an item by ID", nameof(Config.EnableEquip))]
@@ -96,7 +54,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
     #endregion
 
     #region Desynth
-    [CommandHandler("/desynth", "Desynth an item by ID", nameof(Config.EnableDesynth), true)]
+    [CommandHandler("/desynth", "Desynth an item by ID", nameof(Config.EnableDesynth))]
     internal unsafe void OnCommmandDesynth(string command, string arguments)
     {
         if (!uint.TryParse(arguments, out var itemId)) return;
@@ -114,7 +72,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             return;
         }
 
-        P.Memory.SalvageItem(AgentSalvage.Instance(), item, 0, 0);
+        Service.Memory.SalvageItem?.Invoke(AgentSalvage.Instance(), item, 0, 0);
         var retval = new AtkValue();
         Span<AtkValue> param = [
             new AtkValue { Type = ValueType.Int, Int = 0 },
@@ -133,14 +91,14 @@ public partial class Commands : Tweak<CommandsConfiguration>
         {
             if (AgentInventoryContext.Instance() == null)
             {
-                Svc.Log.Warning("AgentInventoryContext is null, cannot lower quality on items");
+                Warning("AgentInventoryContext is null, cannot lower quality on items");
                 return;
             }
             foreach (var i in Inventory.GetHQItems(Inventory.PlayerInventory))
             {
                 // TODO: this still sometimes can just cause a crash, idk why
-                Svc.Log.Info($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
-                TaskManager.EnqueueDelay(100);
+                Log($"Lowering quality on item [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
+                TaskManager.EnqueueDelay(250);
                 TaskManager.Enqueue(() => AgentInventoryContext.Instance() != null, "Checking if AgentInventoryContext is null");
                 TaskManager.Enqueue(() => !RaptureAtkModule.Instance()->AgentUpdateFlag.HasFlag(RaptureAtkModule.AgentUpdateFlags.InventoryUpdate), "checking for no inventory update");
                 TaskManager.Enqueue(() => AgentInventoryContext.Instance()->LowerItemQuality(i.Value, i.Value->Container, i.Value->Slot, 0), $"lowering quality on [{i.Value->ItemId}] {GetRow<Item>(i.Value->ItemId)?.Name} in {i.Value->Container} slot {i.Value->Slot}");
@@ -151,7 +109,7 @@ public partial class Commands : Tweak<CommandsConfiguration>
             var item = Inventory.GetItemInInventory(itemId, Inventory.PlayerInventory, true);
             if (item != null)
             {
-                Svc.Log.Info($"Lowering quality on item [{item->ItemId}] {GetRow<Item>(item->ItemId)?.Name} in {item->Container} slot {item->Slot}");
+                Log($"Lowering quality on item [{item->ItemId}] {GetRow<Item>(item->ItemId)?.Name} in {item->Container} slot {item->Slot}");
                 AgentInventoryContext.Instance()->LowerItemQuality(item, item->Container, item->Slot, 0);
             }
         }
@@ -171,8 +129,8 @@ public partial class Commands : Tweak<CommandsConfiguration>
     #endregion
 
     #region Kill Flag
-    [CommandHandler("/killflag", "", nameof(Config.EnableTPFlag))]
-    internal unsafe void OnCommandKillFlag(string command, string arguments) => P.Automation.Start(new KillFlag());
+    [CommandHandler("/killflag", "Goes to flag, kills hunt mob at destination. Requires VBM.", nameof(Config.EnableKillFlag))]
+    internal unsafe void OnCommandKillFlag(string command, string arguments) => Service.Automation.Start(new KillFlag());
     #endregion
 
 }
