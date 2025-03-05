@@ -1,7 +1,9 @@
 ﻿using ECommons.GameFunctions;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Control;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.Network;
 using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -36,6 +38,16 @@ public unsafe class Game
             var evt = new AtkEvent() { Listener = &addon->AtkEventListener, Target = &AtkStage.Instance()->AtkEventTarget };
             var data = new AtkEventData();
             addon->ReceiveEvent(AtkEventType.ButtonClick, 0, &evt, &data);
+        }
+    }
+
+    public static void SelectString(int index)
+    {
+        if (TryGetAddonByName<AtkUnitBase>("SelectString", out var addon))
+        {
+            AtkValue val = default;
+            val.SetInt(index);
+            addon->FireCallback(1, &val, true);
         }
     }
 
@@ -269,4 +281,84 @@ public unsafe class Game
         }
         return (0, -1);
     }
+
+    public static bool UseAction(ActionType type, uint actionId) => ActionManager.Instance()->UseAction(type, actionId);
+    public static bool IsActionInUse(ActionType type, uint itemId) => ActionManager.Instance()->GetActionStatus(type, itemId) != 0;
+
+    public static bool UseItem(uint itemId) => ActionManager.Instance()->UseAction(ActionType.Item, itemId, extraParam: 65535);
+
+    public static bool InteractWith(ulong gameobjectId)
+    {
+        var obj = GameObjectManager.Instance()->Objects.GetObjectByGameObjectId(gameobjectId);
+        if (obj == null)
+            return false;
+        TargetSystem.Instance()->InteractWithObject(obj, false);
+        return true;
+    }
+
+    public static bool IsTurnInRequestInProgress(uint itemId)
+    {
+        var ui = UIState.Instance();
+        var agent = AgentRequest.Instance();
+        return agent->IsAgentActive() && ui->NpcTrade.Requests.Count == 1 && ui->NpcTrade.Requests.Items[0].ItemId == itemId;
+    }
+
+    public static void TurnInRequests()
+    {
+        var agent = AgentRequest.Instance();
+        if (!agent->IsAgentActive())
+        {
+            PluginLog.Error("Agent not active...");
+            return;
+        }
+
+        if (agent->SelectedTurnInSlot >= 0)
+        {
+            PluginLog.Error($"Turn-in already in progress for slot {agent->SelectedTurnInSlot}");
+            return;
+        }
+
+        Span<AtkValue> param = stackalloc AtkValue[4];
+        param[0].SetInt(2); // start turnin
+        param[2].SetInt(0); // ???
+        param[3].SetInt(0); // ???
+        var res = new AtkValue();
+        for (var i = 0; i < UIState.Instance()->NpcTrade.Requests.Count; i++)
+        {
+            param[1].SetInt(i); // slot
+            agent->ReceiveEvent(&res, param.GetPointer(0), 4, 0);
+        }
+        //var res = new AtkValue();
+        //Span<AtkValue> param = stackalloc AtkValue[4];
+        //param[0].SetInt(2); // start turnin
+        //param[1].SetInt(0); // slot
+        //param[2].SetInt(0); // ???
+        //param[3].SetInt(0); // ???
+        //agent->ReceiveEvent(&res, param.GetPointer(0), 4, 0);
+
+        if (agent->SelectedTurnInSlot != 0 || agent->SelectedTurnInSlotItemOptions <= 0)
+        {
+            PluginLog.Error($"Failed to start turn-in: cur slot={agent->SelectedTurnInSlot}, count={agent->SelectedTurnInSlotItemOptions}");
+            return;
+        }
+
+        param[0].SetInt(0); // confirm
+        param[1].SetInt(0); // option #0
+        agent->ReceiveEvent(&res, param.GetPointer(0), 4, 1);
+
+        if (agent->SelectedTurnInSlot >= 0)
+        {
+            PluginLog.Error($"Turn-in not confirmed: cur slot={agent->SelectedTurnInSlot}");
+            return;
+        }
+
+        // commit
+        var addonId = agent->AddonId;
+        agent->ReceiveEvent(&res, param.GetPointer(0), 4, 0);
+        var addon = RaptureAtkUnitManager.Instance()->GetAddonById((ushort)addonId);
+        if (addon != null && addon->IsVisible)
+            addon->Close(false);
+    }
+
+    public static bool IsQuestComplete(uint questId) => QuestManager.IsQuestComplete(questId);
 }

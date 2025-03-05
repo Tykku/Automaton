@@ -1,4 +1,7 @@
-﻿using ECommons.UIHelpers.AddonMasterImplementations;
+﻿using ECommons.ExcelServices;
+using ECommons.UIHelpers.AddonMasterImplementations;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
+using Lumina.Excel.Sheets;
 using System.Threading.Tasks;
 
 namespace Automaton.Tasks;
@@ -10,6 +13,8 @@ public sealed class BuyCeruleumTanks : CommonTasks
 
     protected override async Task Execute()
     {
+        await GoToWorkshop();
+        await WaitUntil(() => IsScreenReady() && Player.Interactable, "WaitingForZoneToFullyLoad");
         var npc = Game.GetNPCInfo(MammetVoyagerENpcId, Player.Territory, CeruleumTankId);
         ErrorIf(npc == null, $"Failed to find NPC {MammetVoyagerENpcId} in {Player.Territory}");
         ErrorIf(npc!.ShopId == 0, $"Failed to find shop for NPC {MammetVoyagerENpcId} in {Player.Territory}");
@@ -17,6 +22,41 @@ public sealed class BuyCeruleumTanks : CommonTasks
         Status = $"Moving to {npc.Location}";
         await MoveToDirectly(npc.Location, 0.5f);
         await BuyFromFccShop(MammetVoyagerENpcId, npc!.ShopId, CeruleumTankId, 999 - Inventory.GetItemCount(CeruleumTankId, false));
+    }
+
+    private async Task GoToWorkshop()
+    {
+        using var scope = BeginScope("GoToWorkshop");
+        static bool PlayerInWorkshop() => GetRow<TerritoryType>(Player.Territory) is { } t && t.BGM.RowId == 328;
+        if (PlayerInWorkshop()) return; // already there
+
+        if (Player.TerritoryIntendedUse == TerritoryIntendedUseEnum.Housing_Instances)
+        {
+            await EnterWorkshop();
+            return;
+        }
+
+        Status = "Teleporting to FC";
+        Service.Lifestream.ExecuteCommand("fc");
+        await WaitUntilThenFalse(() => Service.Lifestream.IsBusy(), $"LifestreamWaitForFinish");
+        if (EstateHallDoor is { } door)
+        {
+            await MoveTo(door.Position, 3);
+            await InteractWith(door, () => Player.TerritoryIntendedUse == TerritoryIntendedUseEnum.Housing_Instances, skipYesNo: true);
+            await WaitWhile(() => Player.IsBusy, "WaitingForLoad");
+            await EnterWorkshop();
+        }
+    }
+
+    private async Task EnterWorkshop()
+    {
+        using var scope = BeginScope("EnterWorkshop");
+        ErrorIf(Player.TerritoryIntendedUse != TerritoryIntendedUseEnum.Housing_Instances, "Not in a house");
+        if (WorkshopDoor is { } door)
+        {
+            await MoveTo(door.Position, 3);
+            await InteractWith(door, () => GetRow<TerritoryType>(Player.Territory) is { } t && t.BGM.RowId == 328, 0);
+        }
     }
 
     private async Task BuyFromFccShop(ulong vendorInstanceId, uint shopId, uint itemId, int count)
@@ -40,7 +80,7 @@ public sealed class BuyCeruleumTanks : CommonTasks
                 Status = $"Buying x{count} ceruleum tanks";
                 tanks.Buy(Math.Min(count, tanks.MaxPurchaseSize));
                 count -= tanks.MaxPurchaseSize;
-                await WaitUntilSkipYesNo(() => GetAddonTankCount() != Inventory.GetItemCount(tanks.ItemId, false), "WaitingForPurchase");
+                await WaitUntilSkipping(() => GetAddonTankCount() != Inventory.GetItemCount(tanks.ItemId, false), "WaitingForPurchase", skipYesNo: true);
                 Status = "Waiting for purchase to go through";
                 // I could just wait until the atkvalue equals the real inventory count again but this was a fun experiment.
                 using var stop = new OnDispose(ipc.FreeCompanyDialogPacketReceiveHook.Disable);
@@ -70,5 +110,7 @@ public sealed class BuyCeruleumTanks : CommonTasks
         ipc.FreeCompanyDialogPacketReceiveHook.Disable();
     }
 
+    private unsafe DGameObject? WorkshopDoor => Svc.Objects.FirstOrDefault(o => o?.EventInfo() is { } info && info.EventId.ContentId == EventHandlerType.CustomTalk && info.EventId.Id == 721074, null);
+    private unsafe DGameObject? EstateHallDoor => Svc.Objects.FirstOrDefault(o => o?.EventInfo() is { } info && info.EventId.ContentId == EventHandlerType.Warp && info.EventId.Id == 131148, null);
     private int GetAddonTankCount() => TryGetAddonMaster<AddonMaster.FreeCompanyCreditShop>(out var am) ? am.Items.First(x => x.ItemId == CeruleumTankId).QuantityInInventory : 0;
 }

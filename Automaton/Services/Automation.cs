@@ -1,4 +1,6 @@
-﻿using System.Threading;
+﻿using Dalamud.Game.Gui.Dtr;
+using System.Drawing.Design;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Automaton.Services;
@@ -127,9 +129,9 @@ public abstract class AutoTask
 public sealed class Automation : IDisposable
 {
     public AutoTask? CurrentTask { get; private set; }
-
     public bool Running => CurrentTask != null;
-
+    public string Name => CurrentTask?.GetType().Name ?? "None";
+    public string Status => CurrentTask?.Status ?? "Idle";
     public void Dispose() => Stop();
 
     // stop executing any running task
@@ -147,8 +149,8 @@ public sealed class Automation : IDisposable
         CurrentTask = task;
         task.Run(() =>
         {
-            //if (CurrentTask == task)
-            CurrentTask = null;
+            if (CurrentTask == task)
+                CurrentTask = null;
             // else: some other task is now executing
         }, OnCompleted);
     }

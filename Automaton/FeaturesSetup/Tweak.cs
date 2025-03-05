@@ -16,7 +16,6 @@ public abstract partial class Tweak : ITweak
         CachedType = GetType();
         InternalName = CachedType.Name;
         IncompatibilityWarnings = CachedType.GetCustomAttributes<IncompatibilityWarningAttribute>().ToArray();
-        Requirements = CachedType.GetCustomAttributes<RequirementAttribute>().ToArray();
         Outdated = CachedType.GetCustomAttribute<TweakAttribute>()?.Outdated ?? false;
         Disabled = CachedType.GetCustomAttribute<TweakAttribute>()?.Disabled ?? false;
         DisabledReason = CachedType.GetCustomAttribute<TweakAttribute>()?.DisabledReason;
@@ -57,9 +56,6 @@ public abstract partial class Tweak : ITweak
             return;
         }
 
-        if (Requirements.Any(r => r.InternalName == AutoRetainerIPC.Name))
-            AutoRetainer = new(Name);
-
         TaskManager = new();
         Ready = true;
     }
@@ -67,7 +63,8 @@ public abstract partial class Tweak : ITweak
     public Type CachedType { get; init; }
     public string InternalName { get; init; }
     public IncompatibilityWarningAttribute[] IncompatibilityWarnings { get; init; }
-    public RequirementAttribute[] Requirements { get; init; }
+    public virtual BaseIPC[] Requirements { get; } = [];
+    //public IBaseIPC[] Requirements => RequiredIPCs.Where(t => t.IsAssignableTo(typeof(IBaseIPC))).ToArray(); // TODO: I don't like this
 
     public abstract string Name { get; }
     public abstract string Description { get; }
@@ -80,7 +77,6 @@ public abstract partial class Tweak : ITweak
     public string? DisabledReason { get; protected set; }
 
     protected TaskManager TaskManager = null!;
-    protected AutoRetainerApi AutoRetainer = null!;
 
     public virtual void SetupAddressHooks() { }
     public virtual void SetupVTableHooks() { }

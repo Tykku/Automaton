@@ -1,6 +1,7 @@
 ﻿using Automaton.Features;
 using Dalamud.Game.ClientState.Fates;
-using ECommons.Automation;
+using ECommons.GameFunctions;
+using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Fate;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
@@ -13,107 +14,195 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
 {
     // TODO:
     // auto detect yokai event, set yokai mode accordingly
-    private static Vector3 TargetPos;
-    private ushort nextFateId;
-    private byte fateMaxLevel;
-    private unsafe bool InFate => FateManager.Instance()->CurrentFate != null;
-    public unsafe IOrderedEnumerable<IFate> AvailableFates => Svc.Fates.Where(FateConditions).OrderByDescending(f => f.Progress).ThenByDescending(f => f.HasBonus).ThenBy(f => Player.DistanceTo(f.Position));
+    private unsafe IFate? CurrentFate => Svc.Fates.CreateFateReference((nint)FateManager.Instance()->CurrentFate);
+    private IFate? NextFate { get; set; }
 
-    private ushort FateID
-    {
-        get; set
-        {
-            if (field != value)
-                SyncFate(value);
-            field = value;
-        }
-    }
+    public unsafe IOrderedEnumerable<IFate> AvailableFates => Svc.Fates.Where(FateConditions)
+        .OrderByDescending(f => f.HasBonus && Player.Status.FirstOrDefault(x => DateWithDestiny.TwistOfFateStatusIDs.Contains(x.StatusId)) != null)
+        .ThenByDescending(f => f.Progress)
+        .ThenByDescending(f => f.HasBonus)
+        .ThenBy(f => f.TimeRemaining < MinTimeToPrioritise)
+        .ThenBy(f => Player.DistanceTo(f.Position));
+    //public unsafe IOrderedEnumerable<IFate> AvailableFates => Svc.Fates.Where(FateConditions).OrderBy(f => Player.DistanceTo(f.Position));
+
+    private const int MinTimeToPrioritise = 240; // logic: if there are two fates and the further one would time out before the closer one would finish, prioritise the further one
+    private const int TurnInMinimumForGold = 10;
+    private const uint ChocoboMinTime = 300; // seconds
+    private const uint ChocoboSummonItemId = 4868;
+    private unsafe float ChocoboTimeLeft => UIState.Instance()->Buddy.CompanionInfo.TimeLeft;
+    private bool CanSummonChocobo
+        => !Player.IsBusy
+        && Player.TerritoryIntendedUse == ECommons.ExcelServices.TerritoryIntendedUseEnum.Open_World
+        && Inventory.HasItem(ChocoboSummonItemId)
+        && !Game.IsActionInUse(ActionType.Item, ChocoboSummonItemId);
 
     protected override async Task Execute()
     {
         while (true)
         {
-            //if (Svc.Condition[ConditionFlag.Unconscious])
-            //    await Resurrect();
+        start:
+            if (Svc.Condition[ConditionFlag.Unconscious])
+            {
+                if (Player.Revivable) // TODO: if in a party, wait for res instead of reviving
+                    await Resurrect();
+                else
+                    await NextFrame();
+                goto start;
+            }
+
+            if (CurrentFate is { GameData.Value.Rule: (byte)FateRule.Collect })
+            {
+                if (CurrentFate.HandInCount >= TurnInMinimumForGold && CurrentFate is { Progress: 100 }) // we've already turned in enough for gold, just leave
+                {
+                    await WaitWhile(() => PlayerEx.HatersWithFullAggro > 0, "WaitingForHatersToDie");
+                    await LeaveFate();
+                }
+                // turn in whenever we can get gold or if we're running out of time and have enough items to get gold
+                if (CurrentFate.EventItemInventoryCount() >= TurnInMinimumForGold || CurrentFate is { Progress: 100 } or { TimeRemaining: < 60 } && CurrentFate.EventItemInventoryCount() + CurrentFate.HandInCount >= TurnInMinimumForGold)
+                {
+                    await TurnIn();
+                    goto start;
+                }
+            }
 
             if (Svc.Condition[ConditionFlag.InCombat])
             {
-                if (ShouldLevelSyncCheese())
-                    await LevelSyncCheese();
                 Status = "Waiting for combat to end";
+
+                // remove when vbm module supports it
+                if (PlayerEx.Haters.Length < 3)
+                {
+                    Log($"Not enough haters [{PlayerEx.Haters.Length}], setting AI to aggressive");
+                    Service.BossMod.AddTransientStrategy("AI", BossModIPC.Modules.AutoFarm, "General", "Aggressive");
+                }
+                else
+                {
+                    Log($"Too many haters [{PlayerEx.Haters.Length}], resetting AI aggression");
+                    Service.BossMod.ClearTransientStrategy("AI", BossModIPC.Modules.AutoFarm, "General");
+                }
                 await NextFrame(30);
+                goto start;
             }
 
-            if (InFate)
+            if (CanSummonChocobo && ChocoboTimeLeft <= ChocoboMinTime)
+                await SummonChocobo();
+
+            if (NextFate is { State: FateState.Preparation } && Player.DistanceTo(NextFate.Position) < NextFate.Radius)
+                await ActivateFate();
+
+            if (CurrentFate is { } fate)
             {
-                unsafe
+                await WaitWhile(() => Player.IsBusy, "WaitingForNotBusy"); // confirm this check works. For collect fates, you're in a state where you can't call lsync immediately after talking
+                if (Player.Level > fate.MaxLevel)
                 {
                     Status = "Syncing to Fate";
-                    fateMaxLevel = FateManager.Instance()->CurrentFate->MaxLevel;
-                    FateID = FateManager.Instance()->CurrentFate->FateId;
+                    Service.Memory.ExecuteCommand?.Invoke((int)ExecuteCommandFlag.FateLevelSync, fate.FateId, 1);
                     Service.BossMod.SetActive("AI");
                 }
             }
             else
             {
-                FateID = 0;
                 // don't clear preset immediately in case we're still in combat after fate ends
                 await WaitWhile(() => Player.IsBusy, "WaitingForNotBusy");
                 Service.BossMod.ClearActive();
             }
 
-            if (!InFate)
+            if (CurrentFate is not { } && AvailableFates.FirstOrDefault() is { } nextFate)
             {
-                var nextFate = AvailableFates.FirstOrDefault();
-                if (nextFate is not null)
-                {
-                    nextFateId = nextFate.FateId;
-                    TargetPos = GetRandomPointInFate(nextFateId);
-                    await WaitWhile(() => Player.IsBusy, "WaitingForNotBusy");
-                    await MoveTo(TargetPos, 5, true, true);
-                }
+                NextFate = nextFate;
+                await WaitWhile(() => Player.IsBusy, "WaitingForNotBusy");
+                await MoveTo(GetRandomPointInFate(NextFate), 5, true, true);
             }
 
             if (!AvailableFates.Any())
             {
-                if (config.SwapZones)
-                    await SwapZones();
-                else
-                    await NextFrame();
+                //if (config.SwapZones)
+                //    await SwapZones();
+                //else
+                Status = "Waiting for fates to spawn";
+                await NextFrame(60);
             }
 
             await NextFrame();
         }
     }
 
-    private async Task LevelSyncCheese()
+    private async Task SummonChocobo()
     {
-        Status = "About to die. Abusing level sync";
-        SyncFate(FateID, true);
-        await NextFrame(60 * 10);
-        SyncFate(FateID);
+        using var scope = BeginScope("SummonChocobo");
+        Status = "Summoning Chocobo";
+        Game.UseItem(ChocoboSummonItemId);
+        await WaitUntil(() => ChocoboTimeLeft > ChocoboMinTime, "WaitingForChocobo");
+    }
+
+    private unsafe DGameObject? FateActivationNpc => Svc.Objects.FirstOrDefault(o => o.Struct()->NamePlateIconId == 60093);
+    private async Task ActivateFate()
+    {
+        using var scope = BeginScope("ActivateFate");
+        if (FateActivationNpc is { } npc)
+        {
+            Status = "Activating fate";
+            await MoveTo(npc.Position, 3, dismount: true);
+            await InteractWith(npc, () => NextFate!.State == FateState.Running, skipTalk: true, skipYesNo: true);
+        }
+    }
+
+    private unsafe DGameObject? FateTurnInNpc => Svc.Objects.FirstOrDefault(o => o.Struct()->NamePlateIconId == 60732);
+    private async Task TurnIn()
+    {
+        using var scope = BeginScope("TurnIn");
+        if (FateTurnInNpc is { } npc)
+        {
+            await WaitWhile(() => PlayerEx.HatersWithFullAggro > 0, "WaitingForHatersToDie");
+            Service.BossMod.ClearActive();
+            await MoveTo(npc.Position, 3);
+            if (PlayerEx.HatersWithFullAggro > 0)
+            {
+                Service.BossMod.SetActive("AI");
+                Service.BossMod.AddTransientStrategy("AI", BossModIPC.Modules.AutoFarm, "General", "FightBack");
+            }
+            Status = "Waiting for Haters to die";
+            await WaitWhile(() => PlayerEx.HatersWithFullAggro > 0, "WaitingForHatersToDie");
+            Status = "Turning in EventItems";
+            await InteractWith(npc, () => CurrentFate!.EventItemInventoryCount() == 0, skipTalk: true, skipRequest: true);
+            await WaitUntilSkipping(() => !Player.IsBusy, "WaitingForExitNpc", skipTalk: true); // might need to rethink. This is a general combat check vs hater check
+            Service.BossMod.ClearTransientPresetStrategies("AI");
+        }
+    }
+
+    private async Task LeaveFate()
+    {
+        using var scope = BeginScope("LeaveFate");
+        // since CurrentFate is just an auto field, we need to leave the fate manually. Most natural thing to do would be to mount up and fly in the vague direction of the nearest fate
+        Status = "Leaving Fate";
+        if (CurrentFate == null) return;
+        Vector3 RandomCoordOutsideFate(IFate? nextFate = null)
+        {
+            // go in the direction of next fate or your position relative to the current fate just a bit past the fate and a random amount up in the air
+            var direction = Vector3.Normalize((nextFate?.Position ?? Player.Position) - CurrentFate.Position);
+            return CurrentFate.Position + direction * (CurrentFate.Radius * new Random().NextFloat(1.1f, 1.4f)) + new Vector3(0, new Random().Next(10, 30), 0);
+        }
+        // TODO: this might generate a point inside a mountain or something
+        await MoveTo(RandomCoordOutsideFate(AvailableFates.FirstOrDefault()), 5, true, true);
+    }
+
+    private async Task Resurrect()
+    {
+        using var scope = BeginScope("Resurrect");
+        Status = "Reviving";
+        (var lastZone, var lastPos) = (Player.Territory, Player.Position);
+        Service.Memory.ExecuteCommand?.Invoke((int)ExecuteCommandFlag.Revive, 8); // TODO: it's either 8 or 5 depending on what GameMain.field_4095 is
+        await WaitWhile(() => Player.Territory != Player.HomeAetheryteTerritory || Player.IsBusy, "WaitingForRevive");
+        await TeleportTo(lastZone, lastPos);
     }
 
     private async Task SwapZones()
     {
         // if we're achievement farming, find the next zone where the achievement isn't completed, otherwise, pick a random zone within the same expac
         // if we're yokai farming, find the next zone where the yokai isn't completed
+        using var scope = BeginScope("SwapZones");
         var zoneId = GetNextAchievementZone() is { } zone ? zone : GetRandomSameExpacZone();
         await TeleportTo(zoneId, default);
-    }
-
-    private async Task Resurrect()
-    {
-        Status = "Reviving";
-        Service.Memory.ExecuteCommand?.Invoke((int)ExecuteCommandFlag.Revive);
-        await WaitWhile(() => Player.Territory != Player.HomeAetheryteTerritory || Player.IsBusy, "WaitingForRevive");
-    }
-
-    private unsafe bool ShouldLevelSyncCheese()
-    {
-        if (Player.IsLevelSynced && Player.SyncedLevel != Player.UnsyncedLevel)
-            if (Player.Character->Health / Player.Character->MaxHealth < 0.15f) return true;
-        return false;
     }
 
     private unsafe uint? GetNextAchievementZone()
@@ -143,31 +232,29 @@ public sealed class FateGrind(DateWithDestinyConfiguration config) : CommonTasks
         return rows[new Random().Next(rows.Length)].RowId;
     }
 
-    private bool FateConditions(IFate f) => f.GameData.Value.Rule == 1 && f.State != FateState.Preparation && f.Duration <= config.MaxDuration && f.Progress <= config.MaxProgress && f.TimeRemaining > config.MinTimeRemaining && !config.blacklist.Contains(f.FateId);
+    private bool FateConditions(IFate f)
+        => f.Duration <= config.MaxDuration
+        && f.Progress <= config.MaxProgress
+        && (f.TimeRemaining < 0 || f.TimeRemaining > config.MinTimeRemaining)
+        && !config.blacklist.Contains(f.FateId);
 
-    public IOrderedEnumerable<IFate> GetFates() => Svc.Fates.Where(FateConditions)
-        .OrderByDescending(x => config.PrioritizeBonusFates && x.HasBonus && (!config.BonusWhenTwist || Player.Status.FirstOrDefault(x => DateWithDestiny.TwistOfFateStatusIDs.Contains(x.StatusId)) != null))
-        .ThenByDescending(x => config.PrioritizeStartedFates && x.Progress > 0)
-        .ThenBy(f => Vector3.Distance(PlayerEx.Position, f.Position));
-
-    private unsafe Vector3 GetRandomPointInFate(ushort fateID)
+    private unsafe Vector3 GetRandomPointInFate(IFate fate)
     {
-        var fate = FateManager.Instance()->GetFateById(fateID);
-        var angle = new Random().NextDouble() * 2 * Math.PI;
-        // Get a random point in a circle within half its radius
-        var randomPoint = new Vector3((float)(fate->Location.X + fate->Radius / 2 * Math.Cos(angle)), fate->Location.Y, (float)(fate->Location.Z + fate->Radius / 2 * Math.Sin(angle)));
+        var randomPoint = Utils.RandomPointInCircle(fate.Position, fate.Radius, 0.5f);
         var point = Service.Navmesh.NearestPoint(randomPoint, 5, 5);
-        return (Vector3)(point == null ? fate->Location : point);
+        return (Vector3)(point == null ? fate.Position : point);
     }
 
-    private unsafe void SyncFate(ushort value, bool unsync = false)
+    private enum FateRule : byte
     {
-        if (value != 0 && !Player.IsLevelSynced)
-        {
-            if (Player.Level > fateMaxLevel)
-                Chat.Instance.SendMessage("/lsync");
-        }
-        if (unsync && Player.IsLevelSynced)
-            Chat.Instance.SendMessage("/lsync");
+        None = 0,
+        Normal = 1, // trash fates or boss fates
+        Collect = 2, // pick up EventObjects or get them from killing mobs
+        Escort = 3, // guide some npc to the finish line
+        Defend = 4, // defend objectives like crates from being destroyed
+        EventFate = 5, // used for seasonal event fates, like Little Ladies Day, Hatching Tide
+        Chase = 6, // that one special fate in The Peaks
+        ConcertedWorks = 7, // rebuilding the firmament fates
+        Fete = 8, // firmament fates
     }
 }

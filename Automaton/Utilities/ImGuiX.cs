@@ -10,7 +10,6 @@ using ImGuiNET;
 using System.ComponentModel;
 using System.Reflection;
 using System.Threading.Tasks;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Automaton.Utilities;
 public static class ImGuiX
@@ -238,5 +237,14 @@ public static class ImGuiX
     {
         ImGui.TableNextColumn();
         ImGui.TextUnformatted(name);
+    }
+
+    public static void FieldAndValue(string field, object value, bool? valueCondition = null)
+    {
+        using (var _ = ImRaii.PushColor(ImGuiCol.Text, (uint)Colors.Field))
+            ImGui.TextUnformatted($"{field}:");
+        ImGui.SameLine();
+        using (var _ = ImRaii.PushColor(ImGuiCol.Text, (uint)Colors.White))
+            ImGui.TextUnformatted($"{(valueCondition is { } condition && condition || valueCondition is not { } ? value : "N/A")}");
     }
 }
