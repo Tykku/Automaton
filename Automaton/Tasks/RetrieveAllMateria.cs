@@ -1,4 +1,6 @@
 ﻿using Dalamud.Game.Inventory;
+using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using System.Threading.Tasks;
 
 namespace Automaton.Tasks;
@@ -10,7 +12,7 @@ public sealed class RetrieveAllMateria(GameInventoryItem item) : CommonTasks
         var materias = item.Materia.ToArray().Where(x => x != 0);
         foreach (var materia in materias)
         {
-            Service.Memory.MaterializeAction(item, MaterializeEventId.Retrieve);
+            unsafe { EventFramework.Instance()->MaterializeItem((InventoryItem*)item.Address, MaterializeEntryId.Retrieve); }
             await WaitUntilThenFalse(() => Svc.Condition[ConditionFlag.Occupied39], "RetrievingMateria");
         }
     }

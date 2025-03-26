@@ -1,6 +1,7 @@
 using Automaton.Features;
 using ECommons.Configuration;
 using System.Collections.ObjectModel;
+using System.Text;
 using System.Text.Json.Serialization;
 using YamlDotNet.Serialization;
 
@@ -9,7 +10,7 @@ namespace Automaton.Configuration;
 public class Config : IEzConfig
 {
     [JsonIgnore]
-    public const int CURRENT_CONFIG_VERSION = 3;
+    public const int CURRENT_CONFIG_VERSION = 4;
 
     public int Version = CURRENT_CONFIG_VERSION;
     public ObservableCollection<string> EnabledTweaks = [];
@@ -40,17 +41,13 @@ public class YamlFactory : ISerializationFactory
 {
     public string DefaultConfigFileName => $"ezAutomaton.yaml";
 
-    public T Deserialize<T>(string inputData)
-    {
-        return new DeserializerBuilder()
-            .IgnoreUnmatchedProperties()
-            .Build().Deserialize<T>(inputData);
-    }
+    public bool IsBinary => false;
 
-    public string Serialize(object s, bool prettyPrint)
-    {
-        return new SerializerBuilder().Build().Serialize(s);
-    }
+    public T Deserialize<T>(string inputData) => new DeserializerBuilder().IgnoreUnmatchedProperties().Build().Deserialize<T>(inputData);
+    public T? Deserialize<T>(byte[] inputData) => Deserialize<T>(Encoding.UTF8.GetString(inputData));
+    public string Serialize(object s, bool prettyPrint) => new SerializerBuilder().Build().Serialize(s);
+    public string? Serialize(object config) => Serialize(config, false);
+    public byte[]? SerializeAsBin(object config) => Encoding.UTF8.GetBytes(Serialize(config) ?? "");
 }
 
 public interface IMigration
@@ -68,5 +65,16 @@ public class V3 : IMigration
         if (oldType.TypeHeuristics == @"s rank, (?:^|\W)[sS](?:$|\W)")
             config.Tweaks.HuntRelayHelper.Types[0] = (oldType.RelayType, oldType.TypeFormat, @"s rank, rank s, /(?:^|\W)[sS](?:$|\W)/");
         config.Tweaks.HuntRelayHelper.Types.Insert(1, (HuntRelayHelper.RelayTypes.Minions, "Minions", @"ssminion, /\bminions?\b/"));
+    }
+}
+
+public class V4 : IMigration
+{
+    public int Version => 4;
+    public void Migrate(ref Config config)
+    {
+        var oldType = config.Tweaks.HuntRelayHelper.Types[0];
+        if (oldType.TypeHeuristics == @"s rank, rank s, /(?:^|\W)[sS](?:$|\W)/")
+            config.Tweaks.HuntRelayHelper.Types[0] = (oldType.RelayType, oldType.TypeFormat, @"s rank, rank s, /(?:^|\W)(?<!')[sS](?:$|\W)/");
     }
 }

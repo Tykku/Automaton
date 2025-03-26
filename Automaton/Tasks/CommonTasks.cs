@@ -73,8 +73,8 @@ public abstract class CommonTasks : AutoTask
         {
             Status = $"Teleporting to {row.Value.PlaceName.Value.Name}";
             ErrorIf(!Coords.ExecuteTeleport(teleportAetheryteId), $"Failed to teleport to {teleportAetheryteId}");
-            await WaitWhile(() => !PlayerEx.IsBusy, "TeleportStart");
-            await WaitWhile(() => PlayerEx.IsBusy, "TeleportFinish");
+            await WaitWhile(() => !Player.IsBusy, "TeleportStart");
+            await WaitWhile(() => Player.IsBusy, "TeleportFinish");
         }
 
         if (teleportAetheryteId != closestAetheryteId)
@@ -85,8 +85,8 @@ public abstract class CommonTasks : AutoTask
             ErrorIf(!PlayerEx.InteractWith(aetheryteId), "Failed to interact with aetheryte");
             await WaitUntilSkipping(() => Game.AddonActive("SelectString"), "WaitSelectAethernet", skipTalk: true);
             Game.TeleportToAethernet(teleportAetheryteId, closestAetheryteId);
-            await WaitWhile(() => !PlayerEx.IsBusy, "TeleportAethernetStart");
-            await WaitWhile(() => PlayerEx.IsBusy, "TeleportAethernetFinish");
+            await WaitWhile(() => !Player.IsBusy, "TeleportAethernetStart");
+            await WaitWhile(() => Player.IsBusy, "TeleportAethernetFinish");
         }
 
         if (territoryId == 886)
@@ -98,11 +98,11 @@ public abstract class CommonTasks : AutoTask
             ErrorIf(!PlayerEx.InteractWith(aetheryteId), "Failed to interact with aetheryte");
             await WaitUntilSkipping(() => Game.AddonActive("SelectString"), "WaitSelectFirmament", skipTalk: true);
             Game.TeleportToFirmament(teleportAetheryteId);
-            await WaitWhile(() => !PlayerEx.IsBusy, "TeleportFirmamentStart");
-            await WaitWhile(() => PlayerEx.IsBusy, "TeleportFirmamentFinish");
+            await WaitWhile(() => !Player.IsBusy, "TeleportFirmamentStart");
+            await WaitWhile(() => Player.IsBusy, "TeleportFirmamentFinish");
         }
 
-        ErrorIf(Player.Territory != territoryId, "Failed to teleport to expected zone");
+        ErrorIf(Player.Territory != territoryId, $"Failed to teleport to expected zone (exp: {territoryId}, act: {Player.Territory})");
     }
 
     protected async Task Mount()
@@ -167,6 +167,12 @@ public abstract class CommonTasks : AutoTask
         }
     }
 
+    protected async Task WaitUntilTerritory(uint territoryId)
+    {
+        using var scope = BeginScope("WaitUntilTerritory");
+        await WaitWhile(() => Player.Territory != territoryId || Player.IsBusy || !Game.IsTerritoryLoaded(), "WaitingForTerritory");
+    }
+
     protected async Task<(uint, uint)> GetAchievementProgress(uint achievementId, string scopeName)
     {
         using var scope = BeginScope(scopeName);
@@ -204,8 +210,7 @@ public abstract class CommonTasks : AutoTask
     {
         using var scope = BeginScope("InteractWith");
         Status = $"Interacting with {obj.GameObjectId}";
-        static unsafe bool IsJumping() => Service.Memory.UnableToExecuteCommandWhileJumping?.Invoke(Player.Object.Character()) != 0;
-        await WaitWhile(IsJumping, "WaitForAbleToInteract");
+        await WaitWhile(() => Player.Jumping, "WaitForAbleToInteract");
         const int maxAttempts = 5;
         for (var attempt = 0; attempt < maxAttempts; attempt++)
         {

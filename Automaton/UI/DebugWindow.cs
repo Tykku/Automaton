@@ -7,7 +7,7 @@ namespace Automaton.UI;
 
 internal class DebugWindow : Window
 {
-    public DebugWindow() : base($"{Name} - Debug {VersionString}###{nameof(DebugWindow)}")
+    public DebugWindow() : base($"{Name} - Debug v{P.Version.ToString(2)}###{nameof(DebugWindow)}")
     {
         SizeConstraints = new WindowSizeConstraints
         {
@@ -24,7 +24,7 @@ internal class DebugWindow : Window
     private readonly IDebugTab[] Tabs;
     private IDrawableTab? SelectedTab;
 
-    public override bool DrawConditions() => Player.Available && C.ShowDebug;
+    public override bool DrawConditions() => C.ShowDebug;
 
     public override void Draw()
     {

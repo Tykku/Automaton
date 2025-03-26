@@ -44,13 +44,14 @@ public class HuntRelayHelperConfiguration
     [BoolConfig] public bool DontRepeatRelays = true;
     [BoolConfig] public bool OverrideMinionFlag = true;
     [BoolConfig] public bool AllowPartialWorldMatches = false;
+    [BoolConfig] public bool RemoveWorldFromNNCallouts = true;
     [BoolConfig] public bool DryRun = false;
     [StringConfig] public string ChatMessagePattern = "[<world>] <type> -> <flag>";
     [EnumConfig] public HuntRelayHelper.Locality AssumedLocality = HuntRelayHelper.Locality.PlayerHomeWorld;
 
     public List<(HuntRelayHelper.RelayTypes RelayType, string TypeFormat, string TypeHeuristics)> Types =
     [
-        (HuntRelayHelper.RelayTypes.SRank, "S Rank", @"s rank, rank s, /(?:^|\W)[sS](?:$|\W)/"),
+        (HuntRelayHelper.RelayTypes.SRank, "S Rank", @"s rank, rank s, /(?:^|\W)(?<!')[sS](?:$|\W)/"),
         (HuntRelayHelper.RelayTypes.Minions, "Minions", @"ssminion, /\bminions?\b/"),
         (HuntRelayHelper.RelayTypes.Train, "Train", @"train"),
         (HuntRelayHelper.RelayTypes.FATE, "FATE", @"boss, fate"),
@@ -61,10 +62,11 @@ public class HuntRelayHelperConfiguration
 public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
 {
     public override string Name => "Hunt Relay Helper";
-    public override string Description => "Appends a clickable icon to messages with a MapLinkPayload to relay them to other channels. THIS IS CURRENTLY BROKEN, AWAITING A FIX.";
+    public override string Description => "Appends a clickable icon to messages with a MapLinkPayload to relay them to other channels.";
 
     private DalamudLinkPayload RelayLinkPayload = null!;
     private readonly string InstanceHeuristics = @"\b(?:instance\s*(?<instanceNumber>\d+)|i(?<iNumber>\d+))\b";
+    private RelayPayload? LastRelay;
 
     public override void Enable()
     {
@@ -134,6 +136,9 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
         ImGui.Checkbox("Allow partial world matching", ref Config.AllowPartialWorldMatches);
         ImGuiComponents.HelpMarker("This will allow matching shorthands of worlds (e.g. \"behe\" -> Behemoth) but may result in false positives.");
 
+        ImGui.Checkbox("Remove <world> tags for Novice Network relays", ref Config.RemoveWorldFromNNCallouts);
+        ImGuiComponents.HelpMarker("Removes the <world> tag from your relays and any non-whitespace characters surrounding it, then trims any excess whitespace before sending to Novice Network.");
+
         ImGui.Checkbox("Only send local hunts to local channels", ref Config.OnlySendLocalHuntsToLocalChannels);
         ImGuiComponents.HelpMarker("If a hunt is detected as being off your home world, it will only be relayed to non-local channels.");
 
@@ -183,44 +188,35 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
     {
         if (sender.TextValue == Player.Name) return;
         var maplink = message.Payloads.FirstOrDefault(x => x is MapLinkPayload, null);
-        if (maplink is null) return;
+        if (maplink is not MapLinkPayload mlp) return;
 
         try
         {
-            if (maplink is MapLinkPayload mlp)
+            var (world, instance, relayType) = DetectWorldInstanceRelayType(message);
+            if ((RelayTypes)relayType == RelayTypes.None)
             {
-                var (world, instance, relayType) = DetectWorldInstanceRelayType(message);
-                if ((RelayTypes)relayType == RelayTypes.None)
-                {
-                    Log($"Failed to detect relay type in {nameof(MapLinkPayload)} message: {message}");
-                    return;
-                }
-                if (world == null && Config.AssumeBlankWorldsAreLocal)
-                {
-                    switch (Config.AssumedLocality)
-                    {
-                        case Locality.PlayerHomeWorld:
-                            world = Player.Object.HomeWorld.Value;
-                            break;
-                        case Locality.PlayerCurrentWorld:
-                            world = Player.Object.CurrentWorld.Value;
-                            break;
-                        case Locality.SenderHomeWorld:
-                            world = sender.Payloads.OfType<TextPayload>()
-                                .Select(p => p.Text!.Contains((char)SeIconChar.CrossWorld) ? FindRow<World>(x => x!.IsPublic && p.Text.Split((char)SeIconChar.CrossWorld)[1].Contains(x.Name.ToString(), StringComparison.OrdinalIgnoreCase)) : Player.Object.CurrentWorld.Value)
-                                .FirstOrDefault(Player.Object.CurrentWorld.Value);
-                            break;
-                    }
-                    //Debug($"Failed to detect world initially, relying on fallback. World is now {world.Value.Name}");
-                }
-                if (world.HasValue)
-                {
-                    //Verbose($"Detected world {world.Value.Name} and instance {instance} in {nameof(MapLinkPayload)} message: {message}");
-                    message.Payloads.AddRange([RelayLinkPayload, new IconPayload(BitmapFontIcon.NotoriousMonster), new RelayPayload(mlp, world.Value.RowId, instance, relayType, (uint)type).ToRawPayload(), RawPayload.LinkTerminator]);
-                }
-                else
-                    Log($"Failed to detect world in {nameof(MapLinkPayload)} message: {message}");
+                Log($"Failed to detect relay type in {nameof(MapLinkPayload)} message: {message}");
+                return;
             }
+            if (world is null && type is XivChatType.NoviceNetwork)
+                world = Player.Object.CurrentWorld.Value;
+            if (world is null && Config.AssumeBlankWorldsAreLocal)
+            {
+                world = Config.AssumedLocality switch
+                {
+                    Locality.PlayerHomeWorld => Player.Object.HomeWorld.Value,
+                    Locality.PlayerCurrentWorld => Player.Object.CurrentWorld.Value,
+                    Locality.SenderHomeWorld => sender.Payloads.OfType<TextPayload>().Select(p => p.Text!.Contains((char)SeIconChar.CrossWorld)
+                        ? FindRow<World>(x => x!.IsPublic && p.Text.Split((char)SeIconChar.CrossWorld)[1].Contains(x.Name.ToString(), StringComparison.OrdinalIgnoreCase))
+                        : Player.Object.CurrentWorld.Value)
+                        .FirstOrDefault(Player.Object.CurrentWorld.Value),
+                    _ => null
+                };
+            }
+            if (world is { RowId: var id })
+                message.Payloads.AddRange([RelayLinkPayload, new IconPayload(BitmapFontIcon.NotoriousMonster), new RelayPayload(mlp, id, instance, relayType, (uint)type).ToRawPayload(), RawPayload.LinkTerminator]);
+            else
+                Log($"Failed to detect world in {nameof(MapLinkPayload)} message: {message}");
         }
         catch (Exception ex)
         {
@@ -234,38 +230,47 @@ public class HuntRelayHelper : Tweak<HuntRelayHelperConfiguration>
         if (payload == default) { Error($"Failed to parse {nameof(RelayPayload)}"); return; }
         if (Player.TerritoryIntendedUse is TerritoryIntendedUseEnum.Crystalline_Conflict or TerritoryIntendedUseEnum.Crystalline_Conflict_2 or TerritoryIntendedUseEnum.Deep_Dungeon)
         {
-            Log($"Relay link ignored; Player in territory {Player.Territory} ({Player.TerritoryIntendedUse}) where chat is not permitted.");
+            Log($"Relay link ignored. Player in territory {Player.Territory} ({Player.TerritoryIntendedUse}) where chat is not permitted.");
             return;
         }
-        var relay = BuildRelayMessage(payload.MapLink, payload.World, payload.Instance, payload.RelayType);
-        foreach (var (channel, command, islocal, enabled) in Config.Channels)
+        if (payload == LastRelay)
         {
-            if (!enabled) continue;
-            // TODO: add a check to see if the player is in novice network before sending
-            if ((XivChatType)payload.OriginChannel == channel && Config.DontRepeatRelays) continue;
-            if (channel.GetAttribute<XivChatTypeInfoAttribute>()!.FancyName.StartsWith("Linkshell") && Player.CurrentWorld != Player.HomeWorld) continue;
-            if (islocal && Player.Object.CurrentWorld.Value.RowId != payload.World.RowId && Config.OnlySendLocalHuntsToLocalChannels) continue;
-            if (Player.Object.CurrentWorld.Value.RowId != payload.World.RowId && channel.GetAttribute<XivChatTypeInfoAttribute>()!.FancyName.StartsWith("Novice")) continue;
+            Log("Relay link ignored; same as last relay.");
+            return;
+        }
 
-            //TaskManager.EnqueueDelay(500);
+        var relay = BuildRelayMessage(payload.MapLink, payload.World, payload.Instance, payload.RelayType);
+        var nnRelay = BuildRelayMessage(payload.MapLink, payload.World, payload.Instance, payload.RelayType, true);
+        foreach (var (channel, command, islocal, _) in Config.Channels.Where(c => c.Enabled))
+        {
+            var channelName = channel.GetAttribute<XivChatTypeInfoAttribute>()?.FancyName ?? throw new Exception($"Channel has no {nameof(XivChatTypeInfoAttribute)}");
+            if (Config.DontRepeatRelays && payload.OriginChannel == ((uint)channel)) continue; // don't send to the channel that relay was clicked from
+            if (channelName.StartsWith("Linkshell") && Player.CurrentWorld != Player.HomeWorld) continue; // don't send to linkshells when off homeworld
+            if (Config.OnlySendLocalHuntsToLocalChannels && islocal && !channelName.StartsWith("Novice") && Player.HomeWorldId != payload.World.RowId) continue; // don't send to non-novice local channels when off homeworld
+            if (channelName.StartsWith("Novice") && Player.Object.CurrentWorld.Value.RowId != payload.World.RowId) continue; // don't send offworld relays to NN
+            // TODO: add a check to see if the player is in novice network before sending
+
 #pragma warning disable CS0618 // Type or member is obsolete
             TaskManager.Enqueue(() =>
             {
                 if (Player.Available) // messages can't be sent when travelling between zones where your player goes null
                 {
-                    Chat.Instance.SendMessageUnsafe([.. Encoding.UTF8.GetBytes($"/{command} "), .. relay.ToArray()]);
+                    Chat.Instance.SendMessageUnsafe([.. Encoding.UTF8.GetBytes($"/{command} "), .. channelName.StartsWith("Novice") ? nnRelay.ToArray() : relay.ToArray()]);
                     return true;
                 }
                 else return false;
             });
 #pragma warning restore CS0618 // Type or member is obsolete
         }
+
+        LastRelay = payload;
     }
 
-    private Lumina.Text.SeStringBuilder BuildRelayMessage(MapLinkPayload MapLink, World World, uint? Instance, uint RelayType)
+    private Lumina.Text.SeStringBuilder BuildRelayMessage(MapLinkPayload MapLink, World World, uint? Instance, uint RelayType, bool removeWorld = false)
     {
         var pattern = "(?i)(<flag>|<world>|<type>)";
-        var splitMsg = Regex.Split(Config.ChatMessagePattern, pattern);
+        var msg = removeWorld ? Regex.Replace(Config.ChatMessagePattern, @"[^\s]*<world>[^\s]*", "").Replace(@"\s+", " ").Trim() : Config.ChatMessagePattern;
+        var splitMsg = Regex.Split(msg, pattern);
         var sb = new Lumina.Text.SeStringBuilder();
         foreach (var s in splitMsg)
         {

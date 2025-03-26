@@ -3,7 +3,6 @@ using Automaton.UI;
 using Dalamud.Plugin;
 using ECommons;
 using ECommons.Configuration;
-using ECommons.EzEventManager;
 using ECommons.SimpleGui;
 using ECommons.Singletons;
 using System.Collections.Specialized;
@@ -14,58 +13,50 @@ namespace Automaton;
 public class Plugin : IDalamudPlugin
 {
     public static string Name => "CBT";
-    public static string VersionString => $"v{P.GetType().Assembly.GetName().Version?.Major}.{P.GetType().Assembly.GetName().Version?.Minor}";
     private const string Command = "/cbt";
-    private const string LegacyCommand = "/automaton";
     public static Plugin P { get; private set; } = null!;
-    public static Config C => P.Config;
-    private readonly Config Config;
+    public static Config C { get; private set; } = null!;
+    public Version Version { get; private set; } = null!;
 
     public static readonly HashSet<Tweak> Tweaks = [];
 
     public Plugin(IDalamudPluginInterface pluginInterface)
     {
         P = this;
+        Version = P.GetType().Assembly.GetName().Version ?? new(0, 0);
         ECommonsMain.Init(pluginInterface, P, ECommons.Module.DalamudReflector, ECommons.Module.ObjectFunctions);
-        EzConfig.DefaultSerializationFactory = new YamlFactory();
-        Config = EzConfig.Init<Config>();
 
-        IMigration[] migrations = [new V3()];
+#if LocalCS
+        FFXIVClientStructs.Interop.Generated.Addresses.Register();
+        Resolver.GetInstance.Setup(Svc.SigScanner.SearchBase, Svc.Data.GameData.Repositories["ffxiv"].Version, new(Path.Join(pluginInterface.ConfigDirectory.FullName, "SigCache.json")));
+        Resolver.GetInstance.Resolve();
+#endif
+
+        EzConfig.DefaultSerializationFactory = new YamlFactory();
+        C = EzConfig.Init<Config>();
+
+        IMigration[] migrations = [new V3(), new V4()];
         foreach (var migration in migrations)
         {
-            if (Config.Version < migration.Version)
+            if (C.Version < migration.Version)
             {
-                Svc.Log.Info($"Migrating from config version {Config.Version} to {migration.Version}");
-                migration.Migrate(ref Config);
-                Config.Version = migration.Version;
+                Svc.Log.Info($"Migrating from config version {C.Version} to {migration.Version}");
+                var c = C;
+                migration.Migrate(ref c);
+                C = c;
+                C.Version = migration.Version;
             }
         }
 
         EzCmd.Add(Command, OnCommand, $"Opens the {Name} menu");
-        EzCmd.Add(LegacyCommand, OnCommand);
-        EzConfigGui.Init(new HaselWindow().Draw, nameOverride: $"{Name} {VersionString}");
+        EzConfigGui.Init(new HaselWindow().Draw, nameOverride: $"{Name} v{P.Version.ToString(2)}");
         EzConfigGui.WindowSystem.AddWindow(new DebugWindow());
 
         SingletonServiceManager.Initialize(typeof(Service));
 
         Svc.Framework.RunOnFrameworkThread(InitializeTweaks);
         C.EnabledTweaks.CollectionChanged += OnChange;
-        _ = new EzFrameworkUpdate(EventWatcher);
-    }
-
-    private bool inpvp = false;
-    private void EventWatcher()
-    {
-        if (PlayerEx.InPvP)
-        {
-            if (!inpvp)
-            {
-                inpvp = true;
-                Events.OnEnteredPvPInstance();
-            }
-        }
-        else
-            inpvp = false;
+        Svc.ClientState.EnterPvP += Events.OnEnteredPvPInstance;
     }
 
     public static void OnChange(object? sender, NotifyCollectionChangedEventArgs e)
@@ -87,6 +78,7 @@ public class Plugin : IDalamudPlugin
             Svc.Log.Debug($"Disposing {tweak.InternalName}");
             TryExecute(tweak.DisposeInternal);
         }
+        Svc.ClientState.EnterPvP -= Events.OnEnteredPvPInstance;
         C.EnabledTweaks.CollectionChanged -= OnChange;
         ECommonsMain.Dispose();
     }
@@ -142,11 +134,11 @@ public class Plugin : IDalamudPlugin
 
         foreach (var tweak in Tweaks)
         {
-            if (!Config.EnabledTweaks.Contains(tweak.InternalName))
+            if (!C.EnabledTweaks.Contains(tweak.InternalName))
                 continue;
 
-            if (Config.EnabledTweaks.Contains(tweak.InternalName) && tweak.IsDebug && !Config.ShowDebug)
-                Config.EnabledTweaks.Remove(tweak.InternalName);
+            if (C.EnabledTweaks.Contains(tweak.InternalName) && tweak.IsDebug && !C.ShowDebug)
+                C.EnabledTweaks.Remove(tweak.InternalName);
 
             TryExecute(tweak.EnableInternal);
         }

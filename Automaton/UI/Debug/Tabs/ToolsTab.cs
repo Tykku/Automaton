@@ -29,7 +29,7 @@ internal unsafe class ToolsTab : DebugTab
                 cantSpend.Add("ShopExchangeCurrency not open");
         }
         if (ImGui.IsItemHovered()) ImGui.SetTooltip($"Buys the most amount of {GetRow<Item>(34922)?.Name}");
-        cantSpend.ForEach(x => ImGuiEx.Text((uint)Colors.Red, x));
+        cantSpend.ForEach(x => ImGuiEx.Text(EzColor.RedBright, x));
 
         if (ImGui.Button("Use all items"))
         {
@@ -43,22 +43,17 @@ internal unsafe class ToolsTab : DebugTab
                     if (item.Value.ItemSortCategory.Value.Param is 175 or 160)
                     {
                         Service.TaskManager.Enqueue(() => AgentInventoryContext.Instance()->UseItem(slot->ItemId));
-                        Service.TaskManager.Enqueue(() => !Player.IsAnimationLocked && !PlayerEx.IsBusy && !PlayerEx.IsCasting);
+                        Service.TaskManager.Enqueue(() => !Player.IsBusy);
                     }
                     //ActionManager.Instance()->UseAction(ActionType.Item, slot->ItemId);
                 }
             }
         }
 
-        if (Dalamud.SafeMemory.ReadBytes(Svc.SigScanner.ScanText(Memory.Signatures.ItemIsUniqueConditionalJump), 2, out var obj))
-        {
-            ImGui.TextUnformatted($"{BitConverter.ToString(obj)}");
-        }
-
         if (ImGui.Button("hg"))
         {
             var player = (FFXIVClientStructs.FFXIV.Client.Game.Character.Character*)GameObjectManager.Instance()->Objects.IndexSorted[0].Value;
-            player->GetStatusManager()->SetStatus(20, 210, 5.0f, 100, 0xE0000000, true);
+            player->GetStatusManager()->SetStatus(20, 149, 5.0f, 0, 0xE0000000, true);
         }
     }
 }

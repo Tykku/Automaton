@@ -5,7 +5,6 @@ using Dalamud.Interface.Utility.Raii;
 using ECommons;
 using ECommons.Configuration;
 using ECommons.ImGuiMethods;
-using FFXIVClientStructs.FFXIV.Client.Game;
 using ImGuiNET;
 using System.ComponentModel;
 using System.Reflection;
@@ -14,18 +13,12 @@ using System.Threading.Tasks;
 namespace Automaton.Utilities;
 public static class ImGuiX
 {
-    public static void PushCursor(Vector2 vec) => ImGui.SetCursorPos(ImGui.GetCursorPos() + vec);
-    public static void PushCursor(float x, float y) => PushCursor(new Vector2(x, y));
-    public static void PushCursorX(float x) => ImGui.SetCursorPosX(ImGui.GetCursorPosX() + x);
-    public static void PushCursorY(float y) => ImGui.SetCursorPosY(ImGui.GetCursorPosY() + y);
-
     public static void DrawPaddedSeparator()
     {
         var style = ImGui.GetStyle();
-
-        PushCursorY(style.ItemSpacing.Y);
+        ImGuiEx.PushCursorY(style.ItemSpacing.Y);
         ImGui.Separator();
-        PushCursorY(style.ItemSpacing.Y - 1);
+        ImGuiEx.PushCursorY(style.ItemSpacing.Y - 1);
     }
 
     public static void DrawLink(string label, string title, string url)
@@ -39,7 +32,7 @@ public static class ImGuiX
             using var tooltip = ImRaii.Tooltip();
             if (tooltip.Success)
             {
-                ImGuiEx.Text((uint)Colors.White, title);
+                ImGuiEx.Text(EzColor.White, title);
 
                 var pos = ImGui.GetCursorPos();
                 ImGui.GetWindowDrawList().AddText(
@@ -65,20 +58,20 @@ public static class ImGuiX
 
         // push down a bit
         if (PushDown)
-            PushCursorY(style.ItemSpacing.Y * 2);
+            ImGuiEx.PushCursorY(style.ItemSpacing.Y * 2);
 
         var color = Colors.Gold;
         if (RespectUiTheme && Colors.IsLightTheme)
-            color = HaselColor.FromUiForeground(UIColor);
+            color = EzColor.FromUiForeground(UIColor);
 
         ImGuiEx.Text((uint)color, Label);
 
         if (drawSeparator)
         {
             // pull up the separator
-            PushCursorY(-style.ItemSpacing.Y + 3);
+            ImGuiEx.PushCursorY(-style.ItemSpacing.Y + 3);
             ImGui.Separator();
-            PushCursorY(style.ItemSpacing.Y * 2 - 1);
+            ImGuiEx.PushCursorY(style.ItemSpacing.Y * 2 - 1);
         }
     }
 
@@ -178,7 +171,7 @@ public static class ImGuiX
         if (ImGuiComponents.IconButton($"###Pathfind{pos}", FontAwesomeIcon.Map))
         {
             if (!nav.IsRunning())
-                nav.PathfindAndMoveTo(pos, Conditions.IsInFlight);
+                nav.PathfindAndMoveTo(pos, Svc.Condition[ConditionFlag.InFlight]);
             else
                 nav.Stop();
         }
@@ -231,8 +224,6 @@ public static class ImGuiX
         return res;
     }
 
-    public static void TaskState() => ImGui.TextUnformatted($"State: {Service.Automation.CurrentTask?.Status ?? "Idle"}");
-
     public static void DrawTableColumn(string name)
     {
         ImGui.TableNextColumn();
@@ -244,7 +235,7 @@ public static class ImGuiX
         using (var _ = ImRaii.PushColor(ImGuiCol.Text, (uint)Colors.Field))
             ImGui.TextUnformatted($"{field}:");
         ImGui.SameLine();
-        using (var _ = ImRaii.PushColor(ImGuiCol.Text, (uint)Colors.White))
+        using (var _ = ImRaii.PushColor(ImGuiCol.Text, EzColor.White.Vector4))
             ImGui.TextUnformatted($"{(valueCondition is { } condition && condition || valueCondition is not { } ? value : "N/A")}");
     }
 }
