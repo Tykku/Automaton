@@ -1,6 +1,7 @@
 using Dalamud.Game.Network.Structures;
 using Dalamud.Game.Text.SeStringHandling;
 using Dalamud.Game.Text.SeStringHandling.Payloads;
+using Dalamud.Memory;
 using ECommons;
 using ECommons.Automation;
 using FFXIVClientStructs.FFXIV.Client.Game;
@@ -195,7 +196,7 @@ public partial class MarketAdjuster : Tweak<MarketAdjusterConfiguration>
         if (TryGetAddonByName<AtkUnitBase>("RetainerSell", out var addon) && IsAddonReady(addon) && !SearchRunning)
         {
             CurrentItemPrice = addon->AtkValues[5].Int;
-            IsCurrentItemHQ = Marshal.PtrToStringUTF8((nint)addon->AtkValues[1].String.Value)!.Contains(''); // hq symbol
+            IsCurrentItemHQ = MemoryHelper.ReadSeStringNullTerminated((nint)addon->AtkValues[1].String.Value).TextValue.Contains(''); // hq symbol
 
             Callback.Fire(addon, true, 4);
             return true;
