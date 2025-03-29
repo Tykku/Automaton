@@ -6,6 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="d3d89e59-0aa4-4c2a-b6a2-537b9f09bab5" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.Automaton/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Automaton/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Automaton/Features/AutoAdjustRetainerListings.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Automaton/Features/AutoAdjustRetainerListings.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Automaton/Services/Memory.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Automaton/Services/Memory.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -27,6 +29,19 @@
     &quot;accountId&quot;: &quot;05dd12d5-032e-4a32-ae6c-aa4d2ca848ef&quot;
   }
 }</component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$USER_HOME$/AppData/Local/Symbols/src/dotnet/runtime/9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3/src/libraries/System.Private.CoreLib/src/System/IntPtr.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$USER_HOME$/AppData/Local/Symbols/src/dotnet/runtime/9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3/src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/Marshal.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/42B9C7EC7FC7FF171BC4F791/System.Text.RegularExpressions.Generator/System.Text.RegularExpressions.Generator.RegexGenerator/RegexGenerator.g.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/ILViewer/00f3456b89c4428e9fd4e10c6dfc31d4391c08/e8/7185d81d/02000072pdb729.il" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/ILViewer/00f3456b89c4428e9fd4e10c6dfc31d4391c08/fa/45be7109/02000364pdb40.il" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/ILViewer/52d7af1fd18e45c1b58c6cc3effcff0760ca08/c2/09adf3c7/0200018Apdb2219.il" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/ILViewer/f7fb70c69f744723b8eea147d7e79dbec6e00/63/ff701526/02000063pdb24High.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/3fb3a85ec1f864c6167a9aecae24ddc25ce52d8347e299ab40e93a6ce3ee13/AtkUnitBase.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/983489c67c5d396c19e46c445c691a65ebbdca1d4e72a382807d553591f2d668/AddonEvent.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/e0b1c697b5702bc392071db02b3ae5bbc3300f374174a97fc537554b67ac/IAddonLifecycle.cs" root0="SKIP_HIGHLIGHTING" />
+    <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/SourcesCache/f0167c2cc4b2959745eaf869ca55aad6bae1bc2543763084a4f1a61668455/AtkUnitBase.cs" root0="SKIP_HIGHLIGHTING" />
+  </component>
   <component name="ProjectColorInfo">{
   &quot;customColor&quot;: &quot;&quot;,
   &quot;associatedIndex&quot;: 6
@@ -68,6 +83,8 @@
       <workItem from="1737216862543" duration="783000" />
       <workItem from="1738455660198" duration="66000" />
       <workItem from="1740725499887" duration="56000" />
+      <workItem from="1743214256741" duration="7999000" />
+      <workItem from="1743252563819" duration="942000" />
     </task>
     <servers />
   </component>
@@ -75,6 +92,17 @@
     <option name="version" value="3" />
   </component>
   <component name="UnityProjectConfiguration" hasMinimizedUI="false" />
+  <component name="Vcs.Log.History.Properties">
+    <option name="COLUMN_ID_ORDER">
+      <list>
+        <option value="Default.Root" />
+        <option value="Default.Author" />
+        <option value="Default.Date" />
+        <option value="Default.Subject" />
+        <option value="GitHub.CommitStatus" />
+      </list>
+    </option>
+  </component>
   <component name="VcsManagerConfiguration">
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
   </component>

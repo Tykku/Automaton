@@ -12,6 +12,15 @@ using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
 namespace Automaton.Features;
+public struct CStringPointer {
+    private nint _pointer;  // raw pointer
+    // or
+    public nint Pointer;  // public field
+
+    public nint GetPointer() {
+        return _pointer;  // if you need to access the pointer via a method
+    }
+}
 
 public class MarketAdjusterConfiguration
 {
@@ -186,7 +195,7 @@ public partial class MarketAdjuster : Tweak<MarketAdjusterConfiguration>
         if (TryGetAddonByName<AtkUnitBase>("RetainerSell", out var addon) && IsAddonReady(addon) && !SearchRunning)
         {
             CurrentItemPrice = addon->AtkValues[5].Int;
-            IsCurrentItemHQ = Marshal.PtrToStringUTF8((nint)addon->AtkValues[1].String)!.Contains(''); // hq symbol
+            IsCurrentItemHQ = Marshal.PtrToStringUTF8((nint)addon->AtkValues[1].String.Value)!.Contains(''); // hq symbol
 
             Callback.Fire(addon, true, 4);
             return true;
