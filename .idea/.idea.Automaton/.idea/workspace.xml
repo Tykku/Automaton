@@ -4,11 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="d3d89e59-0aa4-4c2a-b6a2-537b9f09bab5" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/.idea.Automaton/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.Automaton/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Automaton/Features/AutoAdjustRetainerListings.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Automaton/Features/AutoAdjustRetainerListings.cs" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Automaton/Services/Memory.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Automaton/Services/Memory.cs" afterDir="false" />
-    </list>
+    <list default="true" id="d3d89e59-0aa4-4c2a-b6a2-537b9f09bab5" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -30,7 +26,7 @@
   }
 }</component>
   <component name="HighlightingSettingsPerFile">
-    <setting file="file://$USER_HOME$/AppData/Local/Symbols/src/dotnet/runtime/9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3/src/libraries/System.Private.CoreLib/src/System/IntPtr.cs" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$USER_HOME$/AppData/Local/Symbols/src/dotnet/runtime/9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3/src/libraries/System.Private.CoreLib/src/System/IntPtr.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/AppData/Local/Symbols/src/dotnet/runtime/9d5a6a9aa463d6d10b0b0ba6d5982cc82f363dc3/src/libraries/System.Private.CoreLib/src/System/Runtime/InteropServices/Marshal.cs" root0="FORCE_HIGHLIGHTING" />
     <setting file="file://$USER_HOME$/AppData/Local/Temp/SourceGeneratedDocuments/42B9C7EC7FC7FF171BC4F791/System.Text.RegularExpressions.Generator/System.Text.RegularExpressions.Generator.RegexGenerator/RegexGenerator.g.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/ILViewer/00f3456b89c4428e9fd4e10c6dfc31d4391c08/e8/7185d81d/02000072pdb729.il" root0="SKIP_HIGHLIGHTING" />
@@ -85,6 +81,7 @@
       <workItem from="1740725499887" duration="56000" />
       <workItem from="1743214256741" duration="7999000" />
       <workItem from="1743252563819" duration="942000" />
+      <workItem from="1743349225745" duration="95000" />
     </task>
     <servers />
   </component>
