@@ -1,12 +1,14 @@
-﻿using ECommons.Automation;
+﻿﻿using ECommons.Automation;
 using ECommons.EzHookManager;
 using FFXIVClientStructs.FFXIV.Client.Game;
 using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Event;
 using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using FFXIVClientStructs.FFXIV.Client.UI;
 using FFXIVClientStructs.FFXIV.Client.UI.Agent;
 using FFXIVClientStructs.FFXIV.Client.UI.Info;
 using FFXIVClientStructs.FFXIV.Common.Lua;
+using FFXIVClientStructs.FFXIV.Component.GUI;
 using System.Runtime.InteropServices;
 
 namespace Automaton.Services;
@@ -25,7 +27,7 @@ public unsafe class Memory
         internal const string KnockbackProc = "E8 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? FF C6";
         internal const string MoveController = "E8 ?? ?? ?? ?? 48 85 C0 74 AE 83 FD 05";
         internal const string MoveItem = "48 89 5C 24 ?? 55 56 57 41 55 41 56 48 8B EC 48 83 EC 40"; // st
-        internal const string PacketDispatcher_OnReceivePacketHookSig = "40 53 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 44 24 ?? 8B F2"; // hyperborea
+        internal const string PacketDispatcher_OnReceivePacketHookSig = "40 55 56 41 56 48 8B EC 48 83 EC ?? 48 8B 05 ?? ?? ?? ?? 48 33 C4 48 89 45 ?? 48 8B 0D ?? ?? ?? ?? 4C 8B F2"; // hyperborea
         internal const string PacketDispatcher_OnSendPacketHook = "48 89 5C 24 ?? 48 89 74 24 ?? 4C 89 64 24 ?? 55 41 56 41 57 48 8B EC 48 83 EC 70"; // hyperborea
         internal const string PlayerController = "48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 3C 01 75 1E 48 8D 0D"; // bossmod
         internal const string PlayerGroundSpeed = "F3 0F 59 05 ?? ?? ?? ?? F3 0F 59 05 ?? ?? ?? ?? F3 0F 58 05 ?? ?? ?? ?? 44 0F 28 C8";
@@ -51,12 +53,14 @@ public unsafe class Memory
         internal delegate nint IsFlightProhibited(nint a1);
         internal delegate bool FollowQuestRecastDelegate(nint a1, nint a2, nint a3, nint a4, nint a5, nint a6);
         internal delegate long KbProcDelegate(long gameobj, float rot, float length, long a4, char a5, int a6);
+        internal delegate void MoveItem(RaptureAtkModule* a1, void* outValue, AtkValue* atkValues);
         internal delegate nint NoBewitchActionDelegate(CSGameObject* gameObj, float x, float y, float z, int a5, nint a6);
         internal delegate void ReceiveAchievementProgressDelegate(Achievement* achievement, uint id, uint current, uint max);
         internal delegate void RetrieveMateriaDelegate(EventFramework* framework, int eventID, InventoryType inventoryType, short inventorySlot, int extraParam);
         internal delegate void RidePillionDelegate(BattleChara* target, int seatIndex);
         internal delegate void SalvageItemDelegate(AgentSalvage* thisPtr, InventoryItem* item, int addonId, byte a4);
         internal delegate nint WorldTravelSetupInfoDelegate(nint worldTravel, ushort currentWorld, ushort targetWorld);
+        internal delegate void ProcessPacketUpdateClassInfoDelegate(InfoProxyInterface* ptr, byte* packetData);
     }
 
     internal Delegates.RidePillionDelegate? RidePillion = EzDelegate.Get<Delegates.RidePillionDelegate>(Signatures.RidePillion);
@@ -66,6 +70,7 @@ public unsafe class Memory
     internal Delegates.WorldTravelSetupInfoDelegate? WorldTravelSetupInfo = EzDelegate.Get<Delegates.WorldTravelSetupInfoDelegate>(Signatures.WorldTravelSetupInfo);
     internal Delegates.RetrieveMateriaDelegate? RetrieveMateria = EzDelegate.Get<Delegates.RetrieveMateriaDelegate>(Signatures.RetrieveMateria);
     internal Delegates.ExecuteCommandDelegate? ExecuteCommand = EzDelegate.Get<Delegates.ExecuteCommandDelegate>(Signatures.ExecuteCommand);
+    internal Delegates.MoveItem? MoveItem = EzDelegate.Get<Delegates.MoveItem>(Signatures.MoveItem);
 
     public Memory() => EzSignatureHelper.Initialize(this);
 
@@ -275,6 +280,20 @@ public unsafe class Memory
             LastPacketTimestamp = DateTime.Now;
             Svc.Log.Info($"{nameof(FreeCompanyDialogPacketReceiveDetour)}: Packet received at {LastPacketTimestamp}");
             FreeCompanyDialogPacketReceiveHook.Original(ptr, packetData);
+        }
+    }
+
+    public class ClassJobInfoSetupIPCReceive : Hook
+    {
+        [EzHook(Signatures.ProcessPacketUpdateClassInfo, false)]
+        internal readonly EzHook<Delegates.ProcessPacketUpdateClassInfoDelegate> ProcessPacketUpdateClassInfoHook = null!;
+
+        internal DateTime LastPacketTimestamp = DateTime.MinValue;
+        private void ProcessPacketUpdateClassInfoDetour(InfoProxyInterface* ptr, byte* packetData)
+        {
+            LastPacketTimestamp = DateTime.Now;
+            Svc.Log.Info($"{nameof(ProcessPacketUpdateClassInfoDetour)}: Packet received at {LastPacketTimestamp}");
+            ProcessPacketUpdateClassInfoHook.Original(ptr, packetData);
         }
     }
     #endregion
