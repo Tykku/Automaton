@@ -35,6 +35,7 @@ public class TweakConfigs
     public HuntRelayHelperConfiguration HuntRelayHelper { get; init; } = new();
     public MarketAdjusterConfiguration MarketAdjuster { get; init; } = new();
     public SimpleCurrencyAlertConfig SimpleCurrencyAlertConfig { get; init; } = new();
+    public ARQuestingConfiguration ARQuestingConfiguration { get; init; } = new();
 }
 
 public class YamlFactory : ISerializationFactory
