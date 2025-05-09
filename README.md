@@ -5,7 +5,7 @@ The plugin formerly known as Automaton, now CBT, is a tweak collection plugin fo
 While I am in the [puni.sh discord](https://discord.gg/punishxiv) and can be reached there for questions, actual bug reports and feature requests I would like to be done here.
 
 ```
-https://puni.sh/api/repository/croizat
+Custom Fork, No repo
 ```
 
 ## Features (non inclusive)
