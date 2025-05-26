@@ -69,12 +69,14 @@ public abstract class AutoTask
     /// <summary>
     /// Wait until condition function returns false, checking once every N frames
     /// </summary>
-    protected async Task WaitWhile(Func<bool> condition, string scopeName, int checkFrequency = 1)
+    protected async Task WaitWhile(Func<bool> condition, string scopeName, int checkFrequency = 1, bool logContinuously = false)
     {
         using var scope = BeginScope(scopeName);
+        Log("waiting...");
         while (condition())
         {
-            Log("waiting...");
+            if (logContinuously)
+                Log("waiting...");
             await NextFrame(checkFrequency);
         }
     }
@@ -82,28 +84,77 @@ public abstract class AutoTask
     /// <summary>
     /// Wait until condition function returns true, checking once every N frames
     /// </summary>
-    protected async Task WaitUntil(Func<bool> condition, string scopeName, int checkFrequency = 1) => await WaitWhile(() => !condition(), scopeName, checkFrequency);
+    protected async Task WaitUntil(Func<bool> condition, string scopeName, int checkFrequency = 1, bool logContinuously = false) => await WaitWhile(() => !condition(), scopeName, checkFrequency, logContinuously);
 
     /// <summary>
     /// Wait until a condition function returns true, then wait until it returns false.
     /// </summary>
     /// <remarks> Meant for functions like checking if an ipc is busy then checking til it's not. </remarks>
-    protected async Task WaitUntilThenFalse(Func<bool> condition, string scopeName, int checkFrequency = 1)
+    protected async Task WaitUntilThenFalse(Func<bool> condition, string scopeName, int checkFrequency = 1, bool logContinuously = false)
     {
         using var scope = BeginScope(scopeName);
-        while (!condition())
+        await WaitUntil(condition, scopeName, checkFrequency, logContinuously);
+        await WaitWhile(condition, scopeName, checkFrequency, logContinuously);
+    }
+
+    /// <summary>
+    /// Attempts to perform an action and wait for a success condition, retrying if the condition isn't met within the timeout.
+    /// </summary>
+    /// <param name="action">The action to perform</param>
+    /// <param name="successCondition">Function that returns true when the action was successful</param>
+    /// <param name="scopeName">Name for debug logging</param>
+    /// <param name="timeoutFrames">Number of frames to wait for success before retrying</param>
+    /// <param name="checkFrequency">How often to check the success condition</param>
+    /// <param name="logContinuously">Whether to log waiting status continuously</param>
+    /// <param name="maxRetries">Maximum number of retry attempts (0 for infinite)</param>
+    protected async Task TryUntil(Action action, Func<bool> successCondition, string scopeName, int timeoutFrames = 60, int checkFrequency = 1, bool logContinuously = false, int maxRetries = 0)
+    {
+        using var scope = BeginScope(scopeName);
+        var attempts = 0;
+        while (maxRetries == 0 || attempts < maxRetries)
         {
-            Log("waiting...");
-            await NextFrame(checkFrequency);
-        }
-        while (condition())
-        {
-            Log("waiting...");
-            await NextFrame(checkFrequency);
+            attempts++;
+            Log($"Attempt {attempts}{(maxRetries > 0 ? $"/{maxRetries}" : "")}...");
+            action();
+
+            // Wait for success condition
+            var success = false;
+            for (var i = 0; i < timeoutFrames; i += checkFrequency)
+            {
+                if (successCondition())
+                {
+                    success = true;
+                    break;
+                }
+                if (logContinuously)
+                    Log("Waiting for success...");
+                await NextFrame(checkFrequency);
+            }
+
+            if (success)
+            {
+                Log("Action succeeded");
+                break;
+            }
+
+            if (maxRetries > 0 && attempts >= maxRetries)
+            {
+                Error($"Action failed after {maxRetries} attempts");
+            }
+            else
+            {
+                Log("Action timed out, retrying...");
+            }
         }
     }
 
     protected void Log(string message) => PluginLog.Debug($"[{GetType().Name}] [{string.Join(" > ", _debugContext)}] {message}");
+    protected void Warning(string message) => PluginLog.Warning($"[{GetType().Name}] [{string.Join(" > ", _debugContext)}] {message}");
+    protected void WarningIf(bool condition, string message)
+    {
+        if (condition)
+            Warning(message);
+    }
 
     // start a new debug context; should be disposed, so usually should be assigned to RAII variable
     protected DebugContext BeginScope(string name) => new(this, name);
